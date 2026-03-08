@@ -7,6 +7,23 @@ __pycache__/
 .venv/
 venv/
 ENV/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Local outputs
+*.out
+*.log
+*.tmp
+provider_matrix.json
+fee_tests.csv
 
 # IDE
 .idea/

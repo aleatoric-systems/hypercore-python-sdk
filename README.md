@@ -4,46 +4,191 @@ Python SDK and CLI for:
 - JSON-RPC access
 - WebSocket market data
 - gRPC bridge access
-- Signed Hyperliquid trading actions
+- Dedicated unified stream endpoints (pre-decoded event feed)
+- High-value market/user intelligence from `/info` (L2, funding, fills, portfolio, user flow)
+
+This SDK is read-only/data-plane only. Signing and order placement interfaces are intentionally excluded.
 
 ## Install
 
 ```bash
 cd /Users/jaws/research/dev/aleatoric/public/hypercore-python-sdk
-PIP_REQUIRE_VIRTUALENV=false python3 -m pip install -e .
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e .
+which hypercore-sdk
+python -c "import hypercore_sdk; print(hypercore_sdk.__file__)"
 ```
 
-## Trading Actions
-
-List all available methods from Hyperliquid `Exchange` and `Info`:
+## Development Setup
 
 ```bash
-hypercore-sdk trade actions --interface all
+cd /Users/jaws/research/dev/aleatoric/public/hypercore-python-sdk
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e '.[dev]'
 ```
 
-Generic method invocation:
+## Quality Gates
 
 ```bash
-hypercore-sdk trade call \
-  --interface exchange \
-  --method update_leverage \
-  --kwargs-json '{"leverage":5,"name":"BTC","is_cross":true}' \
-  --private-key "$HYPER_PRIVATE_KEY"
+cd /Users/jaws/research/dev/aleatoric/public/hypercore-python-sdk
+pytest
+mypy -p hypercore_sdk
 ```
 
-Convenience order/cancel:
+Coverage output is written to `coverage.xml`.
+
+## Project Tracking Docs
+
+- `CHANGELOG.md` - released changes and migration notes.
+- `PROJECT_STATE.md` - current implementation status and open gaps.
+- `AGENTS.md` - agent workflow and handoff conventions for this repo.
+
+## Troubleshooting
+
+If you see:
+
+```text
+ModuleNotFoundError: No module named 'hypercore_sdk'
+```
+
+you are usually running a global shim (`/Users/jaws/.pyenv/.../bin/hypercore-sdk`) instead of this repo's virtualenv.
+
+Fix:
 
 ```bash
-hypercore-sdk trade order \
+cd /Users/jaws/research/dev/aleatoric/public/hypercore-python-sdk
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e '.[dev]'
+hash -r
+which hypercore-sdk
+hypercore-sdk --help
+```
+
+Expected `which hypercore-sdk` output:
+
+```text
+/Users/jaws/research/dev/aleatoric/public/hypercore-python-sdk/.venv/bin/hypercore-sdk
+```
+
+## High-Value Intel Surfaces
+
+`HyperCoreAPI` exposes direct convenience methods for indexers and analytics:
+- `market_snapshot(coin)` (mid, top-of-book, asset context)
+- `user_flow_snapshot(address, dex="")` (state, open orders, fill summary)
+- `user_fills`, `user_fills_by_time`, `funding_history`, `portfolio`
+- `historical_orders`, `user_non_funding_ledger_updates`, `user_vault_equities`, `user_rate_limit`
+
+```python
+from hypercore_sdk import HyperCoreAPI, SDKConfig
+
+with HyperCoreAPI(SDKConfig(info_url="https://api.hyperliquid.xyz/info")) as api:
+    market = api.market_snapshot("BTC")
+    flow = api.user_flow_snapshot("0xYourAddress")
+    print(market["top_of_book"])
+    print(flow["fill_summary"])
+```
+
+CLI shortcuts:
+
+```bash
+hypercore-sdk intel market --coin BTC
+hypercore-sdk intel user-flow --address 0xYourAddress
+hypercore-sdk intel fills --address 0xYourAddress --start-time-ms 1700000000000 --end-time-ms 1700003600000
+```
+
+## Dedicated Unified Stream
+
+Set your stream gateway URL:
+
+```bash
+export HYPER_UNIFIED_STREAM_URL="https://unified.grpc.aleatoric.systems"
+export HYPER_API_KEY="<readonly-key>"
+```
+
+CLI access:
+
+```bash
+hypercore-sdk stream stats
+hypercore-sdk stream events --limit 100
+hypercore-sdk stream sse --max-events 10
+```
+
+Python access:
+
+```python
+from hypercore_sdk import SDKConfig, UnifiedStreamClient
+
+cfg = SDKConfig(unified_stream_url="https://unified.grpc.aleatoric.systems", api_key="<readonly-key>")
+with UnifiedStreamClient(cfg) as stream:
+    print(stream.stats())
+    print(stream.events(limit=50))
+    for event in stream.sse_events(max_events=5):
+        print(event)
+```
+
+## Example Apps
+
+These runnable scripts are in `examples/`:
+
+```bash
+cd /Users/jaws/research/dev/aleatoric/public/hypercore-python-sdk
+```
+
+Benchmark available feeds and latency:
+
+```bash
+python3 examples/preflight_feed_auth.py
+python3 examples/feed_latency_examples.py --coin BTC --runs 5 \
+  --rpc-key "$RPC_GATEWAY_KEY" \
+  --grpc-key "$RPC_GATEWAY_KEY" \
+  --grpc-include-liquidations \
+  --ws-url "wss://api.hyperliquid.xyz/ws" \
+  --ws-key "" \
+  --disk-ws-url "wss://disk.grpc.aleatoric.systems/" \
+  --disk-ws-key "$UNIFIED_STREAM_KEY" \
+  --unified-key "$UNIFIED_STREAM_KEY" \
+  --ws-max-size none \
+  --unified-min-interval-ms 700 \
+  --unified-retry-429 1
+```
+
+Multi-provider comparison (Aleatoric vs public vs HyperRPC vs Dwellir):
+
+```bash
+# Option A: use env-driven defaults
+python3 examples/provider_benchmark_matrix.py --coin BTC --runs 5 --out-json provider_matrix.json
+
+# Option B: explicit provider config
+python3 examples/provider_benchmark_matrix.py \
+  --providers-json examples/providers.example.json \
   --coin BTC \
-  --side buy \
-  --size 0.01 \
-  --limit-px 120000 \
-  --order-type-json '{"limit":{"tif":"Gtc"}}' \
-  --private-key "$HYPER_PRIVATE_KEY"
-
-hypercore-sdk trade cancel \
-  --coin BTC \
-  --oid 123456789 \
-  --private-key "$HYPER_PRIVATE_KEY"
+  --runs 5 \
+  --grpc-include-liquidations \
+  --out-json provider_matrix.json
 ```
+
+Live orderbook ladder + trades console app:
+
+```bash
+python3 examples/orderbook_trades_console.py --coin BTC --depth 12 --trade-limit 30
+```
+
+Live liquidation stream from gRPC feeds:
+
+```bash
+python3 examples/grpc_liquidations_live.py --coin BTC --max-events 20
+```
+
+CLI equivalent:
+
+```bash
+hypercore-sdk grpc liquidations --coin BTC --max-messages 20
+```
+
+All example scripts auto-load credentials from `api/.env` first, then `.env` in the repo root, and accept either `API_KEY` or `HYPER_API_KEY`.
