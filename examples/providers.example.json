@@ -1,0 +1,45 @@
+{
+  "providers": [
+    {
+      "name": "aleatoric",
+      "rpc_url": "https://rpc.aleatoric.systems/",
+      "ws_url": "wss://api.hyperliquid.xyz/ws",
+      "disk_ws_url": "wss://disk.grpc.aleatoric.systems/",
+      "stream_url": "https://unified.grpc.aleatoric.systems",
+      "grpc_target": "hl.grpc.aleatoric.systems:443",
+      "rpc_key": "${RPC_GATEWAY_KEY}",
+      "grpc_key": "${RPC_GATEWAY_KEY}",
+      "ws_key": "",
+      "disk_ws_key": "${UNIFIED_STREAM_KEY}",
+      "unified_key": "${UNIFIED_STREAM_KEY}",
+      "ws_max_size": "none",
+      "unified_min_interval_ms": 700,
+      "unified_retry_429": 1
+    },
+    {
+      "name": "hyperliquid_public",
+      "rpc_url": "https://rpc.hyperliquid.xyz/evm",
+      "ws_url": "wss://api.hyperliquid.xyz/ws"
+    },
+    {
+      "name": "hyperrpc",
+      "rpc_url": "https://<your-hyperrpc-endpoint>",
+      "ws_url": "wss://<your-hyperrpc-ws-endpoint>",
+      "grpc_target": "<your-hyperrpc-grpc-host:443>",
+      "rpc_key": "<your-hyperrpc-key>",
+      "grpc_key": "<your-hyperrpc-key>",
+      "ws_key": "<your-hyperrpc-key>",
+      "ws_max_size": "none"
+    },
+    {
+      "name": "dwellir",
+      "rpc_url": "https://<your-dwellir-endpoint>",
+      "ws_url": "wss://<your-dwellir-ws-endpoint>",
+      "grpc_target": "<your-dwellir-grpc-host:443>",
+      "rpc_key": "<your-dwellir-key>",
+      "grpc_key": "<your-dwellir-key>",
+      "ws_key": "<your-dwellir-key>",
+      "ws_max_size": "none"
+    }
+  ]
+}
