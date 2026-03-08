@@ -46,6 +46,16 @@ def _load_env_credentials() -> None:
 
     if "HYPER_API_KEY" not in os.environ and "API_KEY" in os.environ:
         os.environ["HYPER_API_KEY"] = os.environ["API_KEY"]
+    if "RPC_GATEWAY_KEY" not in os.environ and "RPC_KEY" in os.environ:
+        os.environ["RPC_GATEWAY_KEY"] = os.environ["RPC_KEY"]
+    if "UNIFIED_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
+        os.environ["UNIFIED_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
+    if "DISK_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
+        os.environ["DISK_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
+    if "GRPC_STREAM_KEY" not in os.environ and "UNIFIED_STREAM_KEY" in os.environ:
+        os.environ["GRPC_STREAM_KEY"] = os.environ["UNIFIED_STREAM_KEY"]
+    if "HYPER_API_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
+        os.environ["HYPER_API_KEY"] = os.environ["RPC_GATEWAY_KEY"]
 
 
 _load_env_credentials()
@@ -84,7 +94,7 @@ def build_parser() -> argparse.ArgumentParser:
             "Consumes PriceService/StreamLiquidations and emits JSON lines."
         )
     )
-    parser.add_argument("--target", default=cfg.grpc_target, help="gRPC host:port")
+    parser.add_argument("--target", default=os.getenv("ALEATORIC_GRPC_TARGET", cfg.grpc_target), help="gRPC host:port")
     parser.add_argument("--coin", default="BTC", help="Asset symbol.")
     parser.add_argument("--heartbeat-s", type=int, default=10)
     parser.add_argument(
@@ -93,8 +103,19 @@ def build_parser() -> argparse.ArgumentParser:
         default=0,
         help="Stop after N output events (0 means stream forever).",
     )
-    parser.add_argument("--api-key", default=cfg.api_key)
-    parser.add_argument("--server-name", default=cfg.grpc_server_name, help="TLS SNI/server name override")
+    parser.add_argument(
+        "--api-key",
+        default=(
+            os.getenv("ALEATORIC_GRPC_KEY")
+            or os.getenv("GRPC_STREAM_KEY")
+            or os.getenv("UNIFIED_STREAM_KEY")
+            or os.getenv("UNIFIED_KEY")
+            or os.getenv("RPC_GATEWAY_KEY")
+            or os.getenv("RPC_KEY")
+            or cfg.api_key
+        ),
+    )
+    parser.add_argument("--server-name", default=os.getenv("ALEATORIC_GRPC_SERVER_NAME", cfg.grpc_server_name), help="TLS SNI/server name override")
     parser.add_argument("--timeout", type=float, default=30.0, help="Per-RPC timeout for bounded runs.")
     parser.add_argument("--plaintext", action="store_true", default=False, help="Disable TLS.")
     return parser

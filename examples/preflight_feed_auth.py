@@ -55,15 +55,43 @@ def _load_env_credentials() -> list[str]:
 
     if "HYPER_API_KEY" not in os.environ and "API_KEY" in os.environ:
         os.environ["HYPER_API_KEY"] = os.environ["API_KEY"]
+    if "RPC_GATEWAY_KEY" not in os.environ and "RPC_KEY" in os.environ:
+        os.environ["RPC_GATEWAY_KEY"] = os.environ["RPC_KEY"]
+    if "UNIFIED_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
+        os.environ["UNIFIED_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
+    if "DISK_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
+        os.environ["DISK_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
+    if "GRPC_STREAM_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
+        os.environ["GRPC_STREAM_KEY"] = os.environ["RPC_GATEWAY_KEY"]
+    if "GRPC_STREAM_KEY" not in os.environ and "HYPER_API_KEY" in os.environ:
+        os.environ["GRPC_STREAM_KEY"] = os.environ["HYPER_API_KEY"]
+    if "HYPER_API_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
+        os.environ["HYPER_API_KEY"] = os.environ["RPC_GATEWAY_KEY"]
     return loaded
 
 
-def _mask_key(key: str | None) -> str | None:
-    if not key:
+def _clean_key(value: str | None) -> str | None:
+    if value is None:
         return None
-    if len(key) <= 8:
-        return "*" * len(key)
-    return f"{key[:4]}...{key[-4:]}"
+    cleaned = value.strip()
+    if len(cleaned) >= 2 and cleaned[0] == cleaned[-1] and cleaned[0] in {'"', "'"}:
+        cleaned = cleaned[1:-1].strip()
+    if not cleaned:
+        return None
+    if cleaned.startswith("${") and cleaned.endswith("}"):
+        return None
+    if any(char in cleaned for char in {" ", "\t", "\n", "<", ">"}):
+        return None
+    return cleaned
+
+
+def _mask_key(key: str | None) -> str | None:
+    cleaned = _clean_key(key)
+    if not cleaned:
+        return None
+    if len(cleaned) <= 8:
+        return "*" * len(cleaned)
+    return f"{cleaned[:4]}...{cleaned[-4:]}"
 
 
 def _split_key_list(raw: str | None) -> list[str]:
@@ -73,11 +101,13 @@ def _split_key_list(raw: str | None) -> list[str]:
 
 
 def _pick_key(explicit: str | None, candidates: list[tuple[str, str | None]]) -> tuple[str | None, str | None]:
-    if explicit:
-        return explicit, "cli"
+    cleaned = _clean_key(explicit)
+    if cleaned:
+        return cleaned, "cli"
     for source, value in candidates:
-        if value:
-            return value, source
+        cleaned = _clean_key(value)
+        if cleaned:
+            return cleaned, source
     return None, None
 
 
@@ -234,11 +264,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Preflight auth/key-scope checks for rpc, unified, disk ws, and grpc endpoints."
     )
-    parser.add_argument("--rpc-url", default=cfg.rpc_url)
-    parser.add_argument("--stream-url", default=cfg.unified_stream_url)
-    parser.add_argument("--ws-url", default=cfg.ws_url)
-    parser.add_argument("--grpc-target", default=cfg.grpc_target)
-    parser.add_argument("--grpc-server-name", default=cfg.grpc_server_name)
+    parser.add_argument("--rpc-url", default=os.getenv("ALEATORIC_RPC_URL", cfg.rpc_url))
+    parser.add_argument("--stream-url", default=os.getenv("ALEATORIC_STREAM_URL", cfg.unified_stream_url))
+    parser.add_argument("--ws-url", default=os.getenv("ALEATORIC_DISK_WS_URL", cfg.ws_url))
+    parser.add_argument("--grpc-target", default=os.getenv("ALEATORIC_GRPC_TARGET", cfg.grpc_target))
+    parser.add_argument("--grpc-server-name", default=os.getenv("ALEATORIC_GRPC_SERVER_NAME", cfg.grpc_server_name))
     parser.add_argument("--grpc-plaintext", action="store_true", default=False)
     parser.add_argument("--timeout", type=float, default=8.0)
     parser.add_argument(
@@ -272,6 +302,7 @@ def main(argv: list[str] | None = None) -> int:
         args.rpc_key,
         [
             ("RPC_GATEWAY_KEY", os.getenv("RPC_GATEWAY_KEY")),
+            ("RPC_KEY", os.getenv("RPC_KEY")),
             ("HYPER_API_KEY|API_KEY", generic_key),
             ("api_keys[0]", first_list_key),
         ],
@@ -280,6 +311,7 @@ def main(argv: list[str] | None = None) -> int:
         args.unified_key,
         [
             ("UNIFIED_STREAM_KEY", os.getenv("UNIFIED_STREAM_KEY")),
+            ("UNIFIED_KEY", os.getenv("UNIFIED_KEY")),
             ("HYPER_API_KEY|API_KEY", generic_key),
             ("api_keys[0]", first_list_key),
         ],
@@ -289,6 +321,7 @@ def main(argv: list[str] | None = None) -> int:
         [
             ("DISK_STREAM_KEY", os.getenv("DISK_STREAM_KEY")),
             ("UNIFIED_STREAM_KEY", os.getenv("UNIFIED_STREAM_KEY")),
+            ("UNIFIED_KEY", os.getenv("UNIFIED_KEY")),
             ("HYPER_API_KEY|API_KEY", generic_key),
             ("api_keys[0]", first_list_key),
         ],
@@ -296,7 +329,12 @@ def main(argv: list[str] | None = None) -> int:
     grpc_key, grpc_source = _pick_key(
         args.grpc_key,
         [
+            ("ALEATORIC_GRPC_KEY", os.getenv("ALEATORIC_GRPC_KEY")),
             ("RPC_GATEWAY_KEY", os.getenv("RPC_GATEWAY_KEY")),
+            ("RPC_KEY", os.getenv("RPC_KEY")),
+            ("GRPC_STREAM_KEY", os.getenv("GRPC_STREAM_KEY")),
+            ("UNIFIED_STREAM_KEY", os.getenv("UNIFIED_STREAM_KEY")),
+            ("UNIFIED_KEY", os.getenv("UNIFIED_KEY")),
             ("HYPER_API_KEY|API_KEY", generic_key),
             ("api_keys[0]", first_list_key),
         ],

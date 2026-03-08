@@ -146,7 +146,7 @@ Benchmark available feeds and latency:
 python3 examples/preflight_feed_auth.py
 python3 examples/feed_latency_examples.py --coin BTC --runs 5 \
   --rpc-key "$RPC_GATEWAY_KEY" \
-  --grpc-key "$RPC_GATEWAY_KEY" \
+  --grpc-key "$UNIFIED_STREAM_KEY" \
   --grpc-include-liquidations \
   --ws-url "wss://api.hyperliquid.xyz/ws" \
   --ws-key "" \
@@ -172,6 +172,10 @@ python3 examples/provider_benchmark_matrix.py \
   --grpc-include-liquidations \
   --out-json provider_matrix.json
 ```
+
+`examples/providers.example.json` now contains only live baseline endpoints (Aleatoric + Hyperliquid public).
+Aleatoric defaults now use `UNIFIED_STREAM_KEY` for gRPC unless `ALEATORIC_GRPC_KEY` is set.
+If `--grpc-include-liquidations` is enabled but bridge liquidation topics are not configured, that check is reported as skipped (not a provider failure).
 
 Live orderbook ladder + trades console app:
 

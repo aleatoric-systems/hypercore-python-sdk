@@ -48,6 +48,14 @@ def _load_env_credentials() -> None:
 
     if "HYPER_API_KEY" not in os.environ and "API_KEY" in os.environ:
         os.environ["HYPER_API_KEY"] = os.environ["API_KEY"]
+    if "RPC_GATEWAY_KEY" not in os.environ and "RPC_KEY" in os.environ:
+        os.environ["RPC_GATEWAY_KEY"] = os.environ["RPC_KEY"]
+    if "UNIFIED_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
+        os.environ["UNIFIED_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
+    if "DISK_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
+        os.environ["DISK_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
+    if "HYPER_API_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
+        os.environ["HYPER_API_KEY"] = os.environ["RPC_GATEWAY_KEY"]
 
 
 _load_env_credentials()
@@ -255,10 +263,11 @@ async def run_console(
 
 def build_parser() -> argparse.ArgumentParser:
     cfg = SDKConfig()
+    default_market_ws = os.getenv("ALEATORIC_MARKET_WS_URL") or os.getenv("HYPER_MARKET_WS_URL") or "wss://api.hyperliquid.xyz/ws"
     parser = argparse.ArgumentParser(description="Live orderbook ladder + trade tape console app.")
     parser.add_argument("--coin", default="BTC", help="Asset symbol, for example BTC or ETH.")
-    parser.add_argument("--ws-url", default=cfg.ws_url)
-    parser.add_argument("--api-key", default=cfg.api_key)
+    parser.add_argument("--ws-url", default=default_market_ws)
+    parser.add_argument("--api-key", default=os.getenv("ALEATORIC_MARKET_WS_KEY") or os.getenv("HYPER_API_KEY") or cfg.api_key)
     parser.add_argument("--depth", type=int, default=12, help="Number of book levels to render per side.")
     parser.add_argument("--trade-limit", type=int, default=20, help="Number of recent trades kept in memory.")
     parser.add_argument("--refresh-ms", type=int, default=250, help="Screen refresh interval.")

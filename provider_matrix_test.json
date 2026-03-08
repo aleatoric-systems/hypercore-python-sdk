@@ -1,0 +1,1014 @@
+{
+  "providers": [
+    {
+      "provider": "aleatoric",
+      "ok": true,
+      "result": {
+        "coin": "BTC",
+        "runs": 1,
+        "timeout_s": 10.0,
+        "measurement_notes": {
+          "request_response_rtt": "Full request/response latency measured with local monotonic clock.",
+          "time_to_first_event": "Connect+subscribe until first qualifying stream event is received.",
+          "event_age_ms": "Approximate freshness at receipt: now_ms - event_ts_ms (clock skew can affect this)."
+        },
+        "auth_key_selection": {
+          "rpc_key": "dche...dF4=",
+          "grpc_key": "dche...dF4=",
+          "ws_key": "dche...dF4=",
+          "disk_ws_key": "'ROG... key",
+          "unified_key": "'ROG... key"
+        },
+        "latency_measurement_stamps": {
+          "start_time_ms": "unix epoch milliseconds (wall clock)",
+          "start_time_iso_utc": "ISO-8601 UTC wall-clock timestamp",
+          "start_perf_counter_s": "local monotonic perf counter at attempt start",
+          "latency_ms": "derived from (end_perf_counter_s - start_perf_counter_s) * 1000"
+        },
+        "feeds": {
+          "rpc.eth_blockNumber": {
+            "metric_kind": "request_response_rtt",
+            "stats": {
+              "count": 1,
+              "min_ms": 628.293,
+              "p50_ms": 628.293,
+              "p95_ms": 628.293,
+              "max_ms": 628.293,
+              "avg_ms": 628.293
+            },
+            "event_age_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "ok": 1,
+            "failed": 0,
+            "errors": [],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997466006,
+                "start_time_iso_utc": "2026-03-08T19:17:46.006+00:00",
+                "start_perf_counter_s": 428938.796012625,
+                "end_time_ms": 1772997466634,
+                "end_time_iso_utc": "2026-03-08T19:17:46.634+00:00",
+                "end_perf_counter_s": 428939.424305833,
+                "latency_ms": 628.293,
+                "ok": true
+              }
+            ]
+          },
+          "ws.allMids": {
+            "metric_kind": "time_to_first_event",
+            "stats": {
+              "count": 1,
+              "min_ms": 2324.148,
+              "p50_ms": 2324.148,
+              "p95_ms": 2324.148,
+              "max_ms": 2324.148,
+              "avg_ms": 2324.148
+            },
+            "event_age_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "ok": 1,
+            "failed": 0,
+            "errors": [],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997466635,
+                "start_time_iso_utc": "2026-03-08T19:17:46.635+00:00",
+                "start_perf_counter_s": 428939.424477166,
+                "end_time_ms": 1772997468959,
+                "end_time_iso_utc": "2026-03-08T19:17:48.959+00:00",
+                "end_perf_counter_s": 428941.748625166,
+                "latency_ms": 2324.148,
+                "ok": true,
+                "stream_channel": "allMids",
+                "sdk_reported_latency_ms": 1978.57
+              }
+            ]
+          },
+          "ws.trades": {
+            "metric_kind": "time_to_first_event",
+            "stats": {
+              "count": 1,
+              "min_ms": 1520.522,
+              "p50_ms": 1520.522,
+              "p95_ms": 1520.522,
+              "max_ms": 1520.522,
+              "avg_ms": 1520.522
+            },
+            "event_age_stats": {
+              "count": 1,
+              "min_ms": 13026.0,
+              "p50_ms": 13026.0,
+              "p95_ms": 13026.0,
+              "max_ms": 13026.0,
+              "avg_ms": 13026.0
+            },
+            "ok": 1,
+            "failed": 0,
+            "errors": [],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997468959,
+                "start_time_iso_utc": "2026-03-08T19:17:48.959+00:00",
+                "start_perf_counter_s": 428941.748757541,
+                "end_time_ms": 1772997470479,
+                "end_time_iso_utc": "2026-03-08T19:17:50.479+00:00",
+                "end_perf_counter_s": 428943.269280041,
+                "latency_ms": 1520.522,
+                "ok": true,
+                "stream_channel": "trades",
+                "sdk_reported_latency_ms": 1159.098,
+                "event_ts_ms": 1772997457453,
+                "event_age_ms": 13026
+              }
+            ]
+          },
+          "ws.l2Book": {
+            "metric_kind": "time_to_first_event",
+            "stats": {
+              "count": 1,
+              "min_ms": 1571.481,
+              "p50_ms": 1571.481,
+              "p95_ms": 1571.481,
+              "max_ms": 1571.481,
+              "avg_ms": 1571.481
+            },
+            "event_age_stats": {
+              "count": 1,
+              "min_ms": 940.0,
+              "p50_ms": 940.0,
+              "p95_ms": 940.0,
+              "max_ms": 940.0,
+              "avg_ms": 940.0
+            },
+            "ok": 1,
+            "failed": 0,
+            "errors": [],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997470480,
+                "start_time_iso_utc": "2026-03-08T19:17:50.480+00:00",
+                "start_perf_counter_s": 428943.269342625,
+                "end_time_ms": 1772997472051,
+                "end_time_iso_utc": "2026-03-08T19:17:52.051+00:00",
+                "end_perf_counter_s": 428944.840823416,
+                "latency_ms": 1571.481,
+                "ok": true,
+                "stream_channel": "l2Book",
+                "sdk_reported_latency_ms": 1232.995,
+                "event_ts_ms": 1772997471111,
+                "event_age_ms": 940
+              }
+            ]
+          },
+          "disk.replica_cmd": {
+            "metric_kind": "time_to_first_event",
+            "stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "event_age_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "ok": 0,
+            "failed": 1,
+            "errors": [
+              "server rejected WebSocket connection: HTTP 403"
+            ],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997472051,
+                "start_time_iso_utc": "2026-03-08T19:17:52.051+00:00",
+                "start_perf_counter_s": 428944.840895375,
+                "end_time_ms": 1772997472670,
+                "end_time_iso_utc": "2026-03-08T19:17:52.670+00:00",
+                "end_perf_counter_s": 428945.459945083,
+                "latency_ms": 619.05,
+                "ok": false,
+                "error": "server rejected WebSocket connection: HTTP 403"
+              }
+            ]
+          },
+          "grpc.health": {
+            "metric_kind": "request_response_rtt",
+            "stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "event_age_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "ok": 0,
+            "failed": 1,
+            "errors": [
+              "<_InactiveRpcError of RPC that terminated with:\n\tstatus = StatusCode.PERMISSION_DENIED\n\tdetails = \"Received http2 header with status: 403\"\n\tdebug_error_string = \"UNKNOWN:Error received from peer  {grpc_message:\"Received http2 header with status: 403\", grpc_status:7, created_time:\"2026-03-08T14:17:53.806921-05:00\"}\"\n>"
+            ],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997472670,
+                "start_time_iso_utc": "2026-03-08T19:17:52.670+00:00",
+                "start_perf_counter_s": 428945.4599805,
+                "end_time_ms": 1772997473812,
+                "end_time_iso_utc": "2026-03-08T19:17:53.812+00:00",
+                "end_perf_counter_s": 428946.602123708,
+                "latency_ms": 1142.143,
+                "ok": false,
+                "error": "<_InactiveRpcError of RPC that terminated with:\n\tstatus = StatusCode.PERMISSION_DENIED\n\tdetails = \"Received http2 header with status: 403\"\n\tdebug_error_string = \"UNKNOWN:Error received from peer  {grpc_message:\"Received http2 header with status: 403\", grpc_status:7, created_time:\"2026-03-08T14:17:53.806921-05:00\"}\"\n>"
+              }
+            ]
+          },
+          "grpc.stream:allMids": {
+            "metric_kind": "time_to_first_event",
+            "stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "event_age_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "ok": 0,
+            "failed": 1,
+            "errors": [
+              "<_MultiThreadedRendezvous of RPC that terminated with:\n\tstatus = StatusCode.PERMISSION_DENIED\n\tdetails = \"Received http2 header with status: 403\"\n\tdebug_error_string = \"UNKNOWN:Error received from peer  {grpc_message:\"Received http2 header with status: 403\", grpc_status:7, created_time:\"2026-03-08T14:17:54.881085-05:00\"}\"\n>"
+            ],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997473812,
+                "start_time_iso_utc": "2026-03-08T19:17:53.812+00:00",
+                "start_perf_counter_s": 428946.602224958,
+                "end_time_ms": 1772997474881,
+                "end_time_iso_utc": "2026-03-08T19:17:54.881+00:00",
+                "end_perf_counter_s": 428947.670903875,
+                "latency_ms": 1068.679,
+                "ok": false,
+                "error": "<_MultiThreadedRendezvous of RPC that terminated with:\n\tstatus = StatusCode.PERMISSION_DENIED\n\tdetails = \"Received http2 header with status: 403\"\n\tdebug_error_string = \"UNKNOWN:Error received from peer  {grpc_message:\"Received http2 header with status: 403\", grpc_status:7, created_time:\"2026-03-08T14:17:54.881085-05:00\"}\"\n>"
+              }
+            ]
+          },
+          "grpc.stream:trades": {
+            "metric_kind": "time_to_first_event",
+            "stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "event_age_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "ok": 0,
+            "failed": 1,
+            "errors": [
+              "<_MultiThreadedRendezvous of RPC that terminated with:\n\tstatus = StatusCode.PERMISSION_DENIED\n\tdetails = \"Received http2 header with status: 403\"\n\tdebug_error_string = \"UNKNOWN:Error received from peer  {grpc_message:\"Received http2 header with status: 403\", grpc_status:7, created_time:\"2026-03-08T14:17:55.970236-05:00\"}\"\n>"
+            ],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997474881,
+                "start_time_iso_utc": "2026-03-08T19:17:54.881+00:00",
+                "start_perf_counter_s": 428947.671005166,
+                "end_time_ms": 1772997475970,
+                "end_time_iso_utc": "2026-03-08T19:17:55.970+00:00",
+                "end_perf_counter_s": 428948.759878916,
+                "latency_ms": 1088.874,
+                "ok": false,
+                "error": "<_MultiThreadedRendezvous of RPC that terminated with:\n\tstatus = StatusCode.PERMISSION_DENIED\n\tdetails = \"Received http2 header with status: 403\"\n\tdebug_error_string = \"UNKNOWN:Error received from peer  {grpc_message:\"Received http2 header with status: 403\", grpc_status:7, created_time:\"2026-03-08T14:17:55.970236-05:00\"}\"\n>"
+              }
+            ]
+          },
+          "grpc.stream:l2Book": {
+            "metric_kind": "time_to_first_event",
+            "stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "event_age_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "ok": 0,
+            "failed": 1,
+            "errors": [
+              "<_MultiThreadedRendezvous of RPC that terminated with:\n\tstatus = StatusCode.PERMISSION_DENIED\n\tdetails = \"Received http2 header with status: 403\"\n\tdebug_error_string = \"UNKNOWN:Error received from peer  {grpc_message:\"Received http2 header with status: 403\", grpc_status:7, created_time:\"2026-03-08T14:17:57.031816-05:00\"}\"\n>"
+            ],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997475970,
+                "start_time_iso_utc": "2026-03-08T19:17:55.970+00:00",
+                "start_perf_counter_s": 428948.759939791,
+                "end_time_ms": 1772997477032,
+                "end_time_iso_utc": "2026-03-08T19:17:57.032+00:00",
+                "end_perf_counter_s": 428949.821428541,
+                "latency_ms": 1061.489,
+                "ok": false,
+                "error": "<_MultiThreadedRendezvous of RPC that terminated with:\n\tstatus = StatusCode.PERMISSION_DENIED\n\tdetails = \"Received http2 header with status: 403\"\n\tdebug_error_string = \"UNKNOWN:Error received from peer  {grpc_message:\"Received http2 header with status: 403\", grpc_status:7, created_time:\"2026-03-08T14:17:57.031816-05:00\"}\"\n>"
+              }
+            ]
+          },
+          "grpc.liquidations": {
+            "metric_kind": "time_to_first_event",
+            "stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "event_age_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "ok": 0,
+            "failed": 1,
+            "errors": [
+              "<_MultiThreadedRendezvous of RPC that terminated with:\n\tstatus = StatusCode.PERMISSION_DENIED\n\tdetails = \"Received http2 header with status: 403\"\n\tdebug_error_string = \"UNKNOWN:Error received from peer  {created_time:\"2026-03-08T14:17:58.093434-05:00\", grpc_status:7, grpc_message:\"Received http2 header with status: 403\"}\"\n>"
+            ],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997477032,
+                "start_time_iso_utc": "2026-03-08T19:17:57.032+00:00",
+                "start_perf_counter_s": 428949.821511041,
+                "end_time_ms": 1772997478093,
+                "end_time_iso_utc": "2026-03-08T19:17:58.093+00:00",
+                "end_perf_counter_s": 428950.8830105,
+                "latency_ms": 1061.499,
+                "ok": false,
+                "error": "<_MultiThreadedRendezvous of RPC that terminated with:\n\tstatus = StatusCode.PERMISSION_DENIED\n\tdetails = \"Received http2 header with status: 403\"\n\tdebug_error_string = \"UNKNOWN:Error received from peer  {created_time:\"2026-03-08T14:17:58.093434-05:00\", grpc_status:7, grpc_message:\"Received http2 header with status: 403\"}\"\n>"
+              }
+            ]
+          },
+          "unified.stats": {
+            "metric_kind": "request_response_rtt",
+            "stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "event_age_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "ok": 0,
+            "failed": 1,
+            "errors": [
+              "Client error '401 Unauthorized' for url 'https://unified.grpc.aleatoric.systems/api/v1/unified/stats'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401"
+            ],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997478102,
+                "start_time_iso_utc": "2026-03-08T19:17:58.102+00:00",
+                "start_perf_counter_s": 428950.891671833,
+                "end_time_ms": 1772997478729,
+                "end_time_iso_utc": "2026-03-08T19:17:58.729+00:00",
+                "end_perf_counter_s": 428951.518522041,
+                "latency_ms": 626.85,
+                "ok": false,
+                "error": "Client error '401 Unauthorized' for url 'https://unified.grpc.aleatoric.systems/api/v1/unified/stats'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401"
+              }
+            ]
+          },
+          "unified.events": {
+            "metric_kind": "request_response_rtt",
+            "stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "event_age_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "ok": 0,
+            "failed": 1,
+            "errors": [
+              "Client error '401 Unauthorized' for url 'https://unified.grpc.aleatoric.systems/api/v1/unified/events?limit=1'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401"
+            ],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997478741,
+                "start_time_iso_utc": "2026-03-08T19:17:58.741+00:00",
+                "start_perf_counter_s": 428951.531181791,
+                "end_time_ms": 1772997479358,
+                "end_time_iso_utc": "2026-03-08T19:17:59.358+00:00",
+                "end_perf_counter_s": 428952.147408541,
+                "latency_ms": 616.227,
+                "ok": false,
+                "error": "Client error '401 Unauthorized' for url 'https://unified.grpc.aleatoric.systems/api/v1/unified/events?limit=1'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401"
+              }
+            ]
+          },
+          "unified.sse_first_event": {
+            "metric_kind": "time_to_first_event",
+            "stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "event_age_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "ok": 0,
+            "failed": 1,
+            "errors": [
+              "Client error '401 Unauthorized' for url 'https://unified.grpc.aleatoric.systems/api/v1/unified/stream'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401"
+            ],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997479363,
+                "start_time_iso_utc": "2026-03-08T19:17:59.363+00:00",
+                "start_perf_counter_s": 428952.152287416,
+                "end_time_ms": 1772997479973,
+                "end_time_iso_utc": "2026-03-08T19:17:59.973+00:00",
+                "end_perf_counter_s": 428952.762594041,
+                "latency_ms": 610.307,
+                "ok": false,
+                "error": "Client error '401 Unauthorized' for url 'https://unified.grpc.aleatoric.systems/api/v1/unified/stream'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401"
+              }
+            ]
+          }
+        },
+        "summary_by_feed_type": {
+          "rpc": {
+            "feeds": [
+              "rpc.eth_blockNumber"
+            ],
+            "samples": {
+              "ok": 1,
+              "failed": 0,
+              "total": 1,
+              "success_rate_pct": 100.0
+            },
+            "aggregate_stats": {
+              "count": 1,
+              "min_ms": 628.293,
+              "p50_ms": 628.293,
+              "p95_ms": 628.293,
+              "max_ms": 628.293,
+              "avg_ms": 628.293
+            },
+            "latency_profile": "moderate",
+            "overview": "rpc: p50=628.293 ms, p95=628.293 ms, success=100.0%"
+          },
+          "ws": {
+            "feeds": [
+              "ws.allMids",
+              "ws.trades",
+              "ws.l2Book"
+            ],
+            "samples": {
+              "ok": 3,
+              "failed": 0,
+              "total": 3,
+              "success_rate_pct": 100.0
+            },
+            "aggregate_stats": {
+              "count": 3,
+              "min_ms": 1520.522,
+              "p50_ms": 1571.481,
+              "p95_ms": 2248.881,
+              "max_ms": 2324.148,
+              "avg_ms": 1805.384
+            },
+            "latency_profile": "elevated",
+            "overview": "ws: p50=1571.481 ms, p95=2248.881 ms, success=100.0%"
+          },
+          "disk": {
+            "feeds": [
+              "disk.replica_cmd"
+            ],
+            "samples": {
+              "ok": 0,
+              "failed": 1,
+              "total": 1,
+              "success_rate_pct": 0.0
+            },
+            "aggregate_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "latency_profile": "no_successful_samples",
+            "overview": "disk: p50=0.0 ms, p95=0.0 ms, success=0.0%"
+          },
+          "grpc": {
+            "feeds": [
+              "grpc.health",
+              "grpc.stream:allMids",
+              "grpc.stream:trades",
+              "grpc.stream:l2Book",
+              "grpc.liquidations"
+            ],
+            "samples": {
+              "ok": 0,
+              "failed": 5,
+              "total": 5,
+              "success_rate_pct": 0.0
+            },
+            "aggregate_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "latency_profile": "no_successful_samples",
+            "overview": "grpc: p50=0.0 ms, p95=0.0 ms, success=0.0%"
+          },
+          "unified": {
+            "feeds": [
+              "unified.stats",
+              "unified.events",
+              "unified.sse_first_event"
+            ],
+            "samples": {
+              "ok": 0,
+              "failed": 3,
+              "total": 3,
+              "success_rate_pct": 0.0
+            },
+            "aggregate_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "latency_profile": "no_successful_samples",
+            "overview": "unified: p50=0.0 ms, p95=0.0 ms, success=0.0%"
+          }
+        },
+        "summary_by_metric_kind": {
+          "request_response_rtt": {
+            "feeds": [
+              "rpc.eth_blockNumber",
+              "grpc.health",
+              "unified.stats",
+              "unified.events"
+            ],
+            "samples": {
+              "ok": 1,
+              "failed": 3,
+              "total": 4,
+              "success_rate_pct": 25.0
+            },
+            "latency_stats": {
+              "count": 1,
+              "min_ms": 628.293,
+              "p50_ms": 628.293,
+              "p95_ms": 628.293,
+              "max_ms": 628.293,
+              "avg_ms": 628.293
+            },
+            "event_age_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "overview": "request_response_rtt: p50=628.293 ms, p95=628.293 ms, event_age_p50=0.0 ms"
+          },
+          "time_to_first_event": {
+            "feeds": [
+              "ws.allMids",
+              "ws.trades",
+              "ws.l2Book",
+              "disk.replica_cmd",
+              "grpc.stream:allMids",
+              "grpc.stream:trades",
+              "grpc.stream:l2Book",
+              "grpc.liquidations",
+              "unified.sse_first_event"
+            ],
+            "samples": {
+              "ok": 3,
+              "failed": 6,
+              "total": 9,
+              "success_rate_pct": 33.33
+            },
+            "latency_stats": {
+              "count": 3,
+              "min_ms": 1520.522,
+              "p50_ms": 1571.481,
+              "p95_ms": 2248.881,
+              "max_ms": 2324.148,
+              "avg_ms": 1805.384
+            },
+            "event_age_stats": {
+              "count": 2,
+              "min_ms": 940.0,
+              "p50_ms": 6983.0,
+              "p95_ms": 12421.7,
+              "max_ms": 13026.0,
+              "avg_ms": 6983.0
+            },
+            "overview": "time_to_first_event: p50=1571.481 ms, p95=2248.881 ms, event_age_p50=6983.0 ms"
+          }
+        }
+      }
+    },
+    {
+      "provider": "hyperliquid_public",
+      "ok": true,
+      "result": {
+        "coin": "BTC",
+        "runs": 1,
+        "timeout_s": 10.0,
+        "measurement_notes": {
+          "request_response_rtt": "Full request/response latency measured with local monotonic clock.",
+          "time_to_first_event": "Connect+subscribe until first qualifying stream event is received.",
+          "event_age_ms": "Approximate freshness at receipt: now_ms - event_ts_ms (clock skew can affect this)."
+        },
+        "auth_key_selection": {
+          "rpc_key": "dche...dF4=",
+          "grpc_key": "dche...dF4=",
+          "ws_key": "dche...dF4=",
+          "disk_ws_key": "'ROG... key",
+          "unified_key": "'ROG... key"
+        },
+        "latency_measurement_stamps": {
+          "start_time_ms": "unix epoch milliseconds (wall clock)",
+          "start_time_iso_utc": "ISO-8601 UTC wall-clock timestamp",
+          "start_perf_counter_s": "local monotonic perf counter at attempt start",
+          "latency_ms": "derived from (end_perf_counter_s - start_perf_counter_s) * 1000"
+        },
+        "feeds": {
+          "rpc.eth_blockNumber": {
+            "metric_kind": "request_response_rtt",
+            "stats": {
+              "count": 1,
+              "min_ms": 740.653,
+              "p50_ms": 740.653,
+              "p95_ms": 740.653,
+              "max_ms": 740.653,
+              "avg_ms": 740.653
+            },
+            "event_age_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "ok": 1,
+            "failed": 0,
+            "errors": [],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997480262,
+                "start_time_iso_utc": "2026-03-08T19:18:00.262+00:00",
+                "start_perf_counter_s": 428953.052202208,
+                "end_time_ms": 1772997481003,
+                "end_time_iso_utc": "2026-03-08T19:18:01.003+00:00",
+                "end_perf_counter_s": 428953.792855291,
+                "latency_ms": 740.653,
+                "ok": true
+              }
+            ]
+          },
+          "ws.allMids": {
+            "metric_kind": "time_to_first_event",
+            "stats": {
+              "count": 1,
+              "min_ms": 2350.848,
+              "p50_ms": 2350.848,
+              "p95_ms": 2350.848,
+              "max_ms": 2350.848,
+              "avg_ms": 2350.848
+            },
+            "event_age_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "ok": 1,
+            "failed": 0,
+            "errors": [],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997481003,
+                "start_time_iso_utc": "2026-03-08T19:18:01.003+00:00",
+                "start_perf_counter_s": 428953.793141333,
+                "end_time_ms": 1772997483354,
+                "end_time_iso_utc": "2026-03-08T19:18:03.354+00:00",
+                "end_perf_counter_s": 428956.143988833,
+                "latency_ms": 2350.848,
+                "ok": true,
+                "stream_channel": "allMids",
+                "sdk_reported_latency_ms": 2010.334
+              }
+            ]
+          },
+          "ws.trades": {
+            "metric_kind": "time_to_first_event",
+            "stats": {
+              "count": 1,
+              "min_ms": 1596.432,
+              "p50_ms": 1596.432,
+              "p95_ms": 1596.432,
+              "max_ms": 1596.432,
+              "avg_ms": 1596.432
+            },
+            "event_age_stats": {
+              "count": 1,
+              "min_ms": 11393.0,
+              "p50_ms": 11393.0,
+              "p95_ms": 11393.0,
+              "max_ms": 11393.0,
+              "avg_ms": 11393.0
+            },
+            "ok": 1,
+            "failed": 0,
+            "errors": [],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997483355,
+                "start_time_iso_utc": "2026-03-08T19:18:03.355+00:00",
+                "start_perf_counter_s": 428956.144336958,
+                "end_time_ms": 1772997484951,
+                "end_time_iso_utc": "2026-03-08T19:18:04.951+00:00",
+                "end_perf_counter_s": 428957.740768666,
+                "latency_ms": 1596.432,
+                "ok": true,
+                "stream_channel": "trades",
+                "sdk_reported_latency_ms": 1252.852,
+                "event_ts_ms": 1772997473558,
+                "event_age_ms": 11393
+              }
+            ]
+          },
+          "ws.l2Book": {
+            "metric_kind": "time_to_first_event",
+            "stats": {
+              "count": 1,
+              "min_ms": 1577.958,
+              "p50_ms": 1577.958,
+              "p95_ms": 1577.958,
+              "max_ms": 1577.958,
+              "avg_ms": 1577.958
+            },
+            "event_age_stats": {
+              "count": 1,
+              "min_ms": 866.0,
+              "p50_ms": 866.0,
+              "p95_ms": 866.0,
+              "max_ms": 866.0,
+              "avg_ms": 866.0
+            },
+            "ok": 1,
+            "failed": 0,
+            "errors": [],
+            "events": [
+              {
+                "attempt": 1,
+                "start_time_ms": 1772997484951,
+                "start_time_iso_utc": "2026-03-08T19:18:04.951+00:00",
+                "start_perf_counter_s": 428957.740874416,
+                "end_time_ms": 1772997486529,
+                "end_time_iso_utc": "2026-03-08T19:18:06.529+00:00",
+                "end_perf_counter_s": 428959.318832125,
+                "latency_ms": 1577.958,
+                "ok": true,
+                "stream_channel": "l2Book",
+                "sdk_reported_latency_ms": 1218.425,
+                "event_ts_ms": 1772997485663,
+                "event_age_ms": 866
+              }
+            ]
+          }
+        },
+        "summary_by_feed_type": {
+          "rpc": {
+            "feeds": [
+              "rpc.eth_blockNumber"
+            ],
+            "samples": {
+              "ok": 1,
+              "failed": 0,
+              "total": 1,
+              "success_rate_pct": 100.0
+            },
+            "aggregate_stats": {
+              "count": 1,
+              "min_ms": 740.653,
+              "p50_ms": 740.653,
+              "p95_ms": 740.653,
+              "max_ms": 740.653,
+              "avg_ms": 740.653
+            },
+            "latency_profile": "moderate",
+            "overview": "rpc: p50=740.653 ms, p95=740.653 ms, success=100.0%"
+          },
+          "ws": {
+            "feeds": [
+              "ws.allMids",
+              "ws.trades",
+              "ws.l2Book"
+            ],
+            "samples": {
+              "ok": 3,
+              "failed": 0,
+              "total": 3,
+              "success_rate_pct": 100.0
+            },
+            "aggregate_stats": {
+              "count": 3,
+              "min_ms": 1577.958,
+              "p50_ms": 1596.432,
+              "p95_ms": 2275.406,
+              "max_ms": 2350.848,
+              "avg_ms": 1841.746
+            },
+            "latency_profile": "elevated",
+            "overview": "ws: p50=1596.432 ms, p95=2275.406 ms, success=100.0%"
+          }
+        },
+        "summary_by_metric_kind": {
+          "request_response_rtt": {
+            "feeds": [
+              "rpc.eth_blockNumber"
+            ],
+            "samples": {
+              "ok": 1,
+              "failed": 0,
+              "total": 1,
+              "success_rate_pct": 100.0
+            },
+            "latency_stats": {
+              "count": 1,
+              "min_ms": 740.653,
+              "p50_ms": 740.653,
+              "p95_ms": 740.653,
+              "max_ms": 740.653,
+              "avg_ms": 740.653
+            },
+            "event_age_stats": {
+              "count": 0,
+              "min_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 0.0,
+              "max_ms": 0.0,
+              "avg_ms": 0.0
+            },
+            "overview": "request_response_rtt: p50=740.653 ms, p95=740.653 ms, event_age_p50=0.0 ms"
+          },
+          "time_to_first_event": {
+            "feeds": [
+              "ws.allMids",
+              "ws.trades",
+              "ws.l2Book"
+            ],
+            "samples": {
+              "ok": 3,
+              "failed": 0,
+              "total": 3,
+              "success_rate_pct": 100.0
+            },
+            "latency_stats": {
+              "count": 3,
+              "min_ms": 1577.958,
+              "p50_ms": 1596.432,
+              "p95_ms": 2275.406,
+              "max_ms": 2350.848,
+              "avg_ms": 1841.746
+            },
+            "event_age_stats": {
+              "count": 2,
+              "min_ms": 866.0,
+              "p50_ms": 6129.5,
+              "p95_ms": 10866.65,
+              "max_ms": 11393.0,
+              "avg_ms": 6129.5
+            },
+            "overview": "time_to_first_event: p50=1596.432 ms, p95=2275.406 ms, event_age_p50=6129.5 ms"
+          }
+        }
+      }
+    }
+  ],
+  "rows": [
+    {
+      "provider": "aleatoric",
+      "status": "partial",
+      "rpc_p50_ms": 628.293,
+      "ws_success_pct": 100.0,
+      "grpc_p50_ms": null,
+      "unified_success_pct": 0.0,
+      "notes": "grpc 0/5 ok; unified 0/3 ok"
+    },
+    {
+      "provider": "hyperliquid_public",
+      "status": "ok",
+      "rpc_p50_ms": 740.653,
+      "ws_success_pct": 100.0,
+      "grpc_p50_ms": null,
+      "unified_success_pct": null,
+      "notes": ""
+    }
+  ]
+}

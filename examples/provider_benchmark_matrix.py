@@ -45,6 +45,18 @@ def _load_env_credentials() -> None:
 
     if "HYPER_API_KEY" not in os.environ and "API_KEY" in os.environ:
         os.environ["HYPER_API_KEY"] = os.environ["API_KEY"]
+    if "RPC_GATEWAY_KEY" not in os.environ and "RPC_KEY" in os.environ:
+        os.environ["RPC_GATEWAY_KEY"] = os.environ["RPC_KEY"]
+    if "UNIFIED_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
+        os.environ["UNIFIED_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
+    if "DISK_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
+        os.environ["DISK_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
+    if "GRPC_STREAM_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
+        os.environ["GRPC_STREAM_KEY"] = os.environ["RPC_GATEWAY_KEY"]
+    if "GRPC_STREAM_KEY" not in os.environ and "HYPER_API_KEY" in os.environ:
+        os.environ["GRPC_STREAM_KEY"] = os.environ["HYPER_API_KEY"]
+    if "HYPER_API_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
+        os.environ["HYPER_API_KEY"] = os.environ["RPC_GATEWAY_KEY"]
 
 
 @dataclass(slots=True)
@@ -92,20 +104,29 @@ def _from_mapping(data: dict[str, Any]) -> ProviderSpec:
 
 
 def _default_provider_specs() -> list[ProviderSpec]:
-    rpc_key = os.getenv("RPC_GATEWAY_KEY") or os.getenv("HYPER_API_KEY")
-    stream_key = os.getenv("UNIFIED_STREAM_KEY") or os.getenv("DISK_STREAM_KEY")
+    rpc_key = os.getenv("RPC_GATEWAY_KEY") or os.getenv("RPC_KEY") or os.getenv("HYPER_API_KEY")
+    stream_key = os.getenv("UNIFIED_STREAM_KEY") or os.getenv("UNIFIED_KEY") or os.getenv("DISK_STREAM_KEY")
+    grpc_stream_key = (
+        os.getenv("ALEATORIC_GRPC_KEY")
+        or os.getenv("GRPC_STREAM_KEY")
+        or os.getenv("RPC_GATEWAY_KEY")
+        or os.getenv("RPC_KEY")
+        or rpc_key
+        or stream_key
+    )
 
     specs = [
         ProviderSpec(
             name="aleatoric",
             rpc_url=os.getenv("ALEATORIC_RPC_URL", "https://rpc.aleatoric.systems/"),
-            ws_url=os.getenv("ALEATORIC_MARKET_WS_URL", "wss://api.hyperliquid.xyz/ws"),
+            ws_url=os.getenv("ALEATORIC_MARKET_WS_URL") or os.getenv("HYPER_MARKET_WS_URL", "wss://api.hyperliquid.xyz/ws"),
             disk_ws_url=os.getenv("ALEATORIC_DISK_WS_URL", "wss://disk.grpc.aleatoric.systems/"),
             stream_url=os.getenv("ALEATORIC_STREAM_URL", "https://unified.grpc.aleatoric.systems"),
             grpc_target=os.getenv("ALEATORIC_GRPC_TARGET", "hl.grpc.aleatoric.systems:443"),
+            grpc_server_name=os.getenv("ALEATORIC_GRPC_SERVER_NAME"),
             rpc_key=rpc_key,
-            grpc_key=rpc_key,
-            ws_key=os.getenv("ALEATORIC_MARKET_WS_KEY"),
+            grpc_key=grpc_stream_key,
+            ws_key=os.getenv("ALEATORIC_MARKET_WS_KEY") or os.getenv("HYPER_API_KEY"),
             disk_ws_key=stream_key,
             unified_key=stream_key,
             ws_max_size=os.getenv("ALEATORIC_WS_MAX_SIZE", "none"),
@@ -188,7 +209,6 @@ def _run_provider(
         str(runs),
         "--timeout",
         str(timeout),
-        f"--verify-tls={str(verify_tls).lower()}",
         "--ws-max-size",
         spec.ws_max_size or "none",
         "--unified-min-interval-ms",
@@ -198,6 +218,7 @@ def _run_provider(
         "--grpc-subscriptions",
         grpc_subscriptions,
     ]
+    cmd.append("--verify-tls" if verify_tls else "--no-verify-tls")
     if grpc_include_liquidations:
         cmd.append("--grpc-include-liquidations")
 
@@ -283,20 +304,63 @@ def _summary_row(provider_result: dict[str, Any]) -> dict[str, Any]:
 
     payload = provider_result["result"]
     feed_summary = payload.get("summary_by_feed_type", {})
+    feed_results = payload.get("feeds", {})
 
     rpc = feed_summary.get("rpc", {})
     ws = feed_summary.get("ws", {})
     grpc = feed_summary.get("grpc", {})
     unified = feed_summary.get("unified", {})
 
+    rpc_stats = rpc.get("aggregate_stats", {})
+    grpc_stats = grpc.get("aggregate_stats", {})
+
+    rpc_samples = rpc.get("samples", {})
+    ws_samples = ws.get("samples", {})
+    grpc_samples = grpc.get("samples", {})
+    unified_samples = unified.get("samples", {})
+
+    def _p50_or_none(stats: dict[str, Any]) -> float | None:
+        try:
+            return stats.get("p50_ms") if int(stats.get("count", 0)) > 0 else None
+        except Exception:
+            return None
+
+    def _rate_or_none(samples: dict[str, Any]) -> float | None:
+        try:
+            return samples.get("success_rate_pct") if int(samples.get("total", 0)) > 0 else None
+        except Exception:
+            return None
+
+    notes: list[str] = []
+    for feed_name, samples in (
+        ("rpc", rpc_samples),
+        ("ws", ws_samples),
+        ("grpc", grpc_samples),
+        ("unified", unified_samples),
+    ):
+        total = int(samples.get("total", 0) or 0)
+        failed = int(samples.get("failed", 0) or 0)
+        if total > 0 and failed > 0:
+            ok = int(samples.get("ok", 0) or 0)
+            notes.append(f"{feed_name} {ok}/{total} ok")
+
+    liq = feed_results.get("grpc.liquidations", {})
+    if isinstance(liq, dict) and int(liq.get("skipped", 0) or 0) > 0:
+        reason = str(liq.get("skipped_reason") or "not configured")
+        notes.append(f"grpc.liquidations skipped ({reason})")
+
+    tested_sample_sets = [s for s in (rpc_samples, ws_samples, grpc_samples, unified_samples) if int(s.get("total", 0) or 0) > 0]
+    has_partial_failures = any(int(s.get("failed", 0) or 0) > 0 for s in tested_sample_sets)
+    status = "partial" if has_partial_failures else "ok"
+
     return {
         "provider": provider_result.get("provider"),
-        "status": "ok",
-        "rpc_p50_ms": rpc.get("aggregate_stats", {}).get("p50_ms"),
-        "ws_success_pct": ws.get("samples", {}).get("success_rate_pct"),
-        "grpc_p50_ms": grpc.get("aggregate_stats", {}).get("p50_ms"),
-        "unified_success_pct": unified.get("samples", {}).get("success_rate_pct"),
-        "notes": "",
+        "status": status,
+        "rpc_p50_ms": _p50_or_none(rpc_stats),
+        "ws_success_pct": _rate_or_none(ws_samples),
+        "grpc_p50_ms": _p50_or_none(grpc_stats),
+        "unified_success_pct": _rate_or_none(unified_samples),
+        "notes": "; ".join(notes),
     }
 
 
@@ -352,7 +416,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--providers-json",
         default=None,
-        help="Optional JSON config file for provider endpoints/keys.",
+        help=(
+            "Optional JSON config file for provider endpoints/keys. "
+            "If omitted, built-in defaults target Aleatoric + Hyperliquid public "
+            "(and include HyperRPC/Dwellir when env vars are present)."
+        ),
     )
     parser.add_argument(
         "--grpc-subscriptions",

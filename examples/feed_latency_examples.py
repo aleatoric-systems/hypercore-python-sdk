@@ -5,6 +5,7 @@ import argparse
 import asyncio
 import json
 import os
+import re
 import sys
 import time
 from datetime import datetime, timezone
@@ -48,6 +49,18 @@ def _load_env_credentials() -> None:
 
     if "HYPER_API_KEY" not in os.environ and "API_KEY" in os.environ:
         os.environ["HYPER_API_KEY"] = os.environ["API_KEY"]
+    if "RPC_GATEWAY_KEY" not in os.environ and "RPC_KEY" in os.environ:
+        os.environ["RPC_GATEWAY_KEY"] = os.environ["RPC_KEY"]
+    if "UNIFIED_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
+        os.environ["UNIFIED_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
+    if "DISK_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
+        os.environ["DISK_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
+    if "GRPC_STREAM_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
+        os.environ["GRPC_STREAM_KEY"] = os.environ["RPC_GATEWAY_KEY"]
+    if "GRPC_STREAM_KEY" not in os.environ and "HYPER_API_KEY" in os.environ:
+        os.environ["GRPC_STREAM_KEY"] = os.environ["HYPER_API_KEY"]
+    if "HYPER_API_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
+        os.environ["HYPER_API_KEY"] = os.environ["RPC_GATEWAY_KEY"]
 
 
 _load_env_credentials()
@@ -61,24 +74,43 @@ from hypercore_sdk.ws import get_price_from_ws
 def _split_key_list(raw: str | None) -> list[str]:
     if not raw:
         return []
-    return [part.strip() for part in raw.split(",") if part.strip()]
+    parts = re.split(r"[,\s]+", raw.strip())
+    return [part for part in parts if part]
+
+
+def _clean_key(value: str | None) -> str | None:
+    if value is None:
+        return None
+    cleaned = value.strip()
+    if len(cleaned) >= 2 and cleaned[0] == cleaned[-1] and cleaned[0] in {'"', "'"}:
+        cleaned = cleaned[1:-1].strip()
+    if not cleaned:
+        return None
+    if cleaned.startswith("${") and cleaned.endswith("}"):
+        return None
+    if any(char in cleaned for char in {" ", "\t", "\n", "<", ">"}):
+        return None
+    return cleaned
 
 
 def _pick_key(explicit: str | None, candidates: list[str | None]) -> str | None:
-    if explicit:
-        return explicit
+    normalized = _clean_key(explicit)
+    if normalized:
+        return normalized
     for candidate in candidates:
-        if candidate:
-            return candidate
+        normalized = _clean_key(candidate)
+        if normalized:
+            return normalized
     return None
 
 
 def _mask_key(value: str | None) -> str | None:
-    if not value:
+    normalized = _clean_key(value)
+    if not normalized:
         return None
-    if len(value) <= 8:
+    if len(normalized) <= 8:
         return "***"
-    return f"{value[:4]}...{value[-4:]}"
+    return f"{normalized[:4]}...{normalized[-4:]}"
 
 
 def _parse_ws_max_size(raw: str | None) -> int | None:
@@ -414,6 +446,7 @@ def _grpc_liquidations_first_event_latency(
     runs: int,
 ) -> dict[str, Any]:
     events: list[dict[str, Any]] = []
+    skipped_reason = "liquidation topics are not configured"
 
     for attempt in range(1, runs + 1):
         evt = _attempt_start(attempt)
@@ -438,7 +471,24 @@ def _grpc_liquidations_first_event_latency(
                 done["event_age_ms"] = max(0, now_ms - event_ts_ms)
             events.append(done)
         except Exception as exc:  # pragma: no cover - network failures vary
-            events.append(_attempt_finish(evt, ok=False, error=str(exc)))
+            msg = str(exc)
+            done = _attempt_finish(evt, ok=False, error=msg)
+            if skipped_reason in msg.lower():
+                done["skipped"] = True
+            events.append(done)
+
+    if events and all(evt.get("skipped") for evt in events):
+        return {
+            "metric_kind": "time_to_first_event",
+            "stats": summarize_latencies([]).as_dict(),
+            "event_age_stats": summarize_latencies([]).as_dict(),
+            "ok": 0,
+            "failed": 0,
+            "skipped": len(events),
+            "errors": [f"skipped: {skipped_reason}"],
+            "events": events,
+            "skipped_reason": skipped_reason,
+        }
 
     return _result_payload(events, metric_kind="time_to_first_event")
 
@@ -623,20 +673,20 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--runs", type=int, default=5, help="Number of attempts per feed.")
     parser.add_argument("--timeout", type=float, default=10.0, help="Timeout in seconds per call.")
 
-    parser.add_argument("--rpc-url", default=default_cfg.rpc_url)
+    parser.add_argument("--rpc-url", default=os.getenv("ALEATORIC_RPC_URL", default_cfg.rpc_url))
     parser.add_argument(
         "--ws-url",
-        default=os.getenv("HYPER_MARKET_WS_URL", "wss://api.hyperliquid.xyz/ws"),
+        default=os.getenv("ALEATORIC_MARKET_WS_URL") or os.getenv("HYPER_MARKET_WS_URL", "wss://api.hyperliquid.xyz/ws"),
         help="Market WS endpoint for allMids/trades/l2Book subscriptions.",
     )
     parser.add_argument(
         "--disk-ws-url",
-        default=default_cfg.ws_url,
+        default=os.getenv("ALEATORIC_DISK_WS_URL", default_cfg.ws_url),
         help="Disk-sync WS endpoint for replica_cmd stream.",
     )
-    parser.add_argument("--stream-url", default=default_cfg.unified_stream_url)
-    parser.add_argument("--grpc-target", default=default_cfg.grpc_target, help="host:port")
-    parser.add_argument("--grpc-server-name", default=default_cfg.grpc_server_name)
+    parser.add_argument("--stream-url", default=os.getenv("ALEATORIC_STREAM_URL", default_cfg.unified_stream_url))
+    parser.add_argument("--grpc-target", default=os.getenv("ALEATORIC_GRPC_TARGET", default_cfg.grpc_target), help="host:port")
+    parser.add_argument("--grpc-server-name", default=os.getenv("ALEATORIC_GRPC_SERVER_NAME", default_cfg.grpc_server_name))
     parser.add_argument("--grpc-plaintext", action="store_true", default=False, help="Disable TLS for gRPC.")
     parser.add_argument("--grpc-heartbeat-s", type=int, default=10)
     parser.add_argument(
@@ -657,12 +707,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="Heartbeat interval for StreamLiquidations benchmark.",
     )
 
-    parser.add_argument("--api-key", default=default_cfg.api_key)
-    parser.add_argument("--rpc-key", default=os.getenv("RPC_GATEWAY_KEY"))
-    parser.add_argument("--grpc-key", default=os.getenv("RPC_GATEWAY_KEY"))
-    parser.add_argument("--ws-key", default=os.getenv("HYPER_API_KEY"))
-    parser.add_argument("--disk-ws-key", default=os.getenv("DISK_STREAM_KEY") or os.getenv("UNIFIED_STREAM_KEY"))
-    parser.add_argument("--unified-key", default=os.getenv("UNIFIED_STREAM_KEY"))
+    parser.add_argument("--api-key", default=os.getenv("RPC_GATEWAY_KEY") or os.getenv("RPC_KEY") or default_cfg.api_key)
+    parser.add_argument("--rpc-key", default=os.getenv("RPC_GATEWAY_KEY") or os.getenv("RPC_KEY"))
+    parser.add_argument(
+        "--grpc-key",
+        default=(
+            os.getenv("ALEATORIC_GRPC_KEY")
+            or os.getenv("GRPC_STREAM_KEY")
+            or os.getenv("UNIFIED_STREAM_KEY")
+            or os.getenv("UNIFIED_KEY")
+            or os.getenv("RPC_GATEWAY_KEY")
+            or os.getenv("RPC_KEY")
+        ),
+    )
+    parser.add_argument("--ws-key", default=os.getenv("ALEATORIC_MARKET_WS_KEY") or os.getenv("HYPER_API_KEY"))
+    parser.add_argument(
+        "--disk-ws-key",
+        default=os.getenv("DISK_STREAM_KEY") or os.getenv("UNIFIED_STREAM_KEY") or os.getenv("UNIFIED_KEY"),
+    )
+    parser.add_argument("--unified-key", default=os.getenv("UNIFIED_STREAM_KEY") or os.getenv("UNIFIED_KEY"))
     parser.add_argument(
         "--ws-max-size",
         default=os.getenv("HYPER_WS_MAX_SIZE", "none"),
@@ -703,7 +766,20 @@ def main(argv: list[str] | None = None) -> int:
     first_list_key = key_list[0] if key_list else None
 
     rpc_key = _pick_key(args.rpc_key, [args.api_key, os.getenv("HYPER_API_KEY"), os.getenv("API_KEY"), first_list_key])
-    grpc_key = _pick_key(args.grpc_key, [rpc_key, args.api_key, os.getenv("HYPER_API_KEY"), first_list_key])
+    grpc_key = _pick_key(
+        args.grpc_key,
+        [
+            args.unified_key,
+            os.getenv("ALEATORIC_GRPC_KEY"),
+            os.getenv("GRPC_STREAM_KEY"),
+            os.getenv("UNIFIED_STREAM_KEY"),
+            os.getenv("UNIFIED_KEY"),
+            rpc_key,
+            args.api_key,
+            os.getenv("HYPER_API_KEY"),
+            first_list_key,
+        ],
+    )
     ws_key = _pick_key(args.ws_key, [args.api_key, os.getenv("HYPER_API_KEY"), first_list_key])
     disk_ws_key = _pick_key(
         args.disk_ws_key,
