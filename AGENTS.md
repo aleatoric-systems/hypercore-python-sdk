@@ -21,6 +21,7 @@ It explicitly excludes:
 3. Update tests for every behavior change.
 4. Update `README.md`, `PROJECT_STATE.md`, and `CHANGELOG.md` in the same change.
 5. Keep examples runnable from repo root.
+6. If a gRPC example changes auth or diagnostics behavior, verify whether failures are caused by local key resolution or endpoint-side authorization before handoff.
 
 ## Required Validation
 
@@ -44,4 +45,6 @@ mypy -p hypercore_sdk
 4. Update:
    - `CHANGELOG.md`
    - `PROJECT_STATE.md`
-
+5. For gRPC example/auth diagnostics changes:
+   - verify the active endpoint behavior when credentials are available
+   - note whether denial is local config drift or endpoint-side auth policy

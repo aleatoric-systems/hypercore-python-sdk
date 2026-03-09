@@ -183,6 +183,31 @@ Live orderbook ladder + trades console app:
 python3 examples/orderbook_trades_console.py --coin BTC --depth 12 --trade-limit 30
 ```
 
+Live gRPC `l2Book` + `trades` bridge console:
+
+```bash
+python3 examples/grpc_l2book_trades_console.py --coin BTC --history-limit 30
+```
+
+This gRPC console renders the latest normalized bridge prices from `subscription=l2Book` and
+`subscription=trades` side-by-side. Use `examples/orderbook_trades_console.py` when you need the
+full public WebSocket depth ladder instead of the bridge's normalized feed output.
+
+The gRPC console now always prints:
+- the selected key source
+- the health preflight result
+
+If the endpoint allows health checks but rejects `PriceService` streams, the console also prints:
+- a fast diagnosis: `health works, stream auth denied by endpoint`
+
+If the endpoint rejects health and stream RPCs with the same key, it prints:
+- `health=auth_denied | StatusCode.PERMISSION_DENIED | Received http2 header with status: 403`
+- a fast diagnosis: `health and stream auth denied by endpoint`
+
+That broader denial indicates endpoint-side key scope or gateway policy, not a missing local key when `key_present=yes`.
+
+In either case, use `examples/orderbook_trades_console.py` for live viewing until the endpoint-side gRPC scope is corrected.
+
 Live liquidation stream from gRPC feeds:
 
 ```bash
