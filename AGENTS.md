@@ -47,6 +47,7 @@ python -m twine check dist/*
 4. Update:
    - `CHANGELOG.md`
    - `PROJECT_STATE.md`
+   - benchmark profiles/baselines when the benchmark output contract changes
 5. Verify packaging artifacts:
    - `python -m build`
    - `python -m twine check dist/*`

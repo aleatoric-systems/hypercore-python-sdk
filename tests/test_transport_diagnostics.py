@@ -3,8 +3,10 @@ from __future__ import annotations
 import httpx
 
 from hypercore_sdk.transport_diagnostics import (
+    availability_state_from_result,
     classify_http_exception,
     classify_http_status_code,
+    recommend_exit,
     summarize_event_availability,
 )
 
@@ -132,4 +134,22 @@ def test_summarize_event_availability_handles_empty_success_and_other_failures()
         "reason": "all_attempts_failed_mixed_errors",
         "error_kinds": ["runtime_error", "transport_error"],
         "status_codes": [],
+    }
+
+
+def test_availability_state_from_result_and_recommend_exit() -> None:
+    assert availability_state_from_result({"ok": True}) == "ok"
+    assert availability_state_from_result({"ok": False, "availability": "upstream_unavailable"}) == "upstream_unavailable"
+    assert availability_state_from_result({"ok": False, "availability": "denied"}) == "auth_denied"
+    assert availability_state_from_result({"ok": False, "error_kind": "transport_error"}) == "unreachable"
+    assert availability_state_from_result({"ok": False}) == "error"
+
+    assert recommend_exit(["ok", "unknown"]) == {"state": "ok", "code": 0}
+    assert recommend_exit(["rate_limited", "upstream_unavailable"]) == {
+        "state": "upstream_unavailable",
+        "code": 12,
+    }
+    assert recommend_exit(["auth_denied", "upstream_unavailable"]) == {
+        "state": "auth_denied",
+        "code": 14,
     }

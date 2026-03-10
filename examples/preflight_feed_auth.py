@@ -30,7 +30,12 @@ from hypercore_sdk.example_auth import (
     unified_key_candidates,
 )
 from hypercore_sdk.grpc_client import GrpcClient, GrpcConnectionConfig
-from hypercore_sdk.transport_diagnostics import classify_http_exception, classify_http_status_code
+from hypercore_sdk.transport_diagnostics import (
+    availability_state_from_result,
+    classify_http_exception,
+    classify_http_status_code,
+    recommend_exit,
+)
 
 
 def _append_query(url: str, key: str, value: str) -> str:
@@ -219,6 +224,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=True,
         help="Exit non-zero when any check fails (enabled by default).",
     )
+    parser.add_argument(
+        "--availability-exit-codes",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Exit with a machine-readable code derived from the failing check states.",
+    )
     return parser
 
 
@@ -272,8 +283,11 @@ def main(argv: list[str] | None = None) -> int:
         "checks": checks,
         "overall_ok": overall_ok,
     }
+    output["exit_recommendation"] = recommend_exit([availability_state_from_result(result) for result in checks.values()])
 
     print(json.dumps(output, indent=2))
+    if args.availability_exit_codes:
+        return int(output["exit_recommendation"]["code"])
     if args.strict and not overall_ok:
         return 2
     return 0

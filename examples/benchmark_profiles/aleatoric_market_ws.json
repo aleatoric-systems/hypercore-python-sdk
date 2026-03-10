@@ -1,0 +1,12 @@
+{
+  "profile_name": "aleatoric_market_ws",
+  "coin": "BTC",
+  "runs": 1,
+  "timeout": 10.0,
+  "skip_rpc": true,
+  "skip_disk_ws": true,
+  "skip_grpc": true,
+  "skip_unified": true,
+  "ws_url": "wss://api.hyperliquid.xyz/ws",
+  "ws_max_size": "none"
+}

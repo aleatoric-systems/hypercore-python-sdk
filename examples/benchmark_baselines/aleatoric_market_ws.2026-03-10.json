@@ -1,0 +1,223 @@
+{
+  "coin": "BTC",
+  "runs": 1,
+  "timeout_s": 10.0,
+  "profile_name": "aleatoric_market_ws",
+  "profile_path": "examples/benchmark_profiles/aleatoric_market_ws.json",
+  "measurement_notes": {
+    "request_response_rtt": "Full request/response latency measured with local monotonic clock.",
+    "time_to_first_event": "Connect+subscribe until first qualifying stream event is received.",
+    "event_age_ms": "Approximate freshness at receipt: now_ms - event_ts_ms (clock skew can affect this)."
+  },
+  "auth_key_selection": {
+    "rpc_key": "dche...dF4=",
+    "grpc_key": "dche...dF4=",
+    "ws_key": "dche...dF4=",
+    "disk_ws_key": "ROG6...0qYx",
+    "unified_key": "ROG6...0qYx"
+  },
+  "auth_key_sources": {
+    "rpc_key": "RPC_GATEWAY_KEY",
+    "grpc_key": "RPC_GATEWAY_KEY",
+    "ws_key": "HYPER_API_KEY|API_KEY",
+    "disk_ws_key": "DISK_STREAM_KEY",
+    "unified_key": "disk_ws_key"
+  },
+  "latency_measurement_stamps": {
+    "start_time_ms": "unix epoch milliseconds (wall clock)",
+    "start_time_iso_utc": "ISO-8601 UTC wall-clock timestamp",
+    "start_perf_counter_s": "local monotonic perf counter at attempt start",
+    "latency_ms": "derived from (end_perf_counter_s - start_perf_counter_s) * 1000"
+  },
+  "feeds": {
+    "ws.allMids": {
+      "metric_kind": "time_to_first_event",
+      "stats": {
+        "count": 1,
+        "min_ms": 2611.433,
+        "p50_ms": 2611.433,
+        "p95_ms": 2611.433,
+        "max_ms": 2611.433,
+        "avg_ms": 2611.433
+      },
+      "event_age_stats": {
+        "count": 0,
+        "min_ms": 0.0,
+        "p50_ms": 0.0,
+        "p95_ms": 0.0,
+        "max_ms": 0.0,
+        "avg_ms": 0.0
+      },
+      "availability": {
+        "state": "ok",
+        "reason": "all_attempts_succeeded"
+      },
+      "ok": 1,
+      "failed": 0,
+      "errors": [],
+      "events": [
+        {
+          "attempt": 1,
+          "start_time_ms": 1773109916153,
+          "start_time_iso_utc": "2026-03-10T02:31:56.153+00:00",
+          "start_perf_counter_s": 90575.120065,
+          "end_time_ms": 1773109918764,
+          "end_time_iso_utc": "2026-03-10T02:31:58.764+00:00",
+          "end_perf_counter_s": 90577.731498458,
+          "latency_ms": 2611.433,
+          "ok": true,
+          "stream_channel": "allMids",
+          "sdk_reported_latency_ms": 1918.566
+        }
+      ]
+    },
+    "ws.trades": {
+      "metric_kind": "time_to_first_event",
+      "stats": {
+        "count": 1,
+        "min_ms": 1628.992,
+        "p50_ms": 1628.992,
+        "p95_ms": 1628.992,
+        "max_ms": 1628.992,
+        "avg_ms": 1628.992
+      },
+      "event_age_stats": {
+        "count": 1,
+        "min_ms": 4181.0,
+        "p50_ms": 4181.0,
+        "p95_ms": 4181.0,
+        "max_ms": 4181.0,
+        "avg_ms": 4181.0
+      },
+      "availability": {
+        "state": "ok",
+        "reason": "all_attempts_succeeded"
+      },
+      "ok": 1,
+      "failed": 0,
+      "errors": [],
+      "events": [
+        {
+          "attempt": 1,
+          "start_time_ms": 1773109918764,
+          "start_time_iso_utc": "2026-03-10T02:31:58.764+00:00",
+          "start_perf_counter_s": 90577.731640083,
+          "end_time_ms": 1773109920393,
+          "end_time_iso_utc": "2026-03-10T02:32:00.393+00:00",
+          "end_perf_counter_s": 90579.360631916,
+          "latency_ms": 1628.992,
+          "ok": true,
+          "stream_channel": "trades",
+          "sdk_reported_latency_ms": 942.123,
+          "event_ts_ms": 1773109916213,
+          "event_age_ms": 4181
+        }
+      ]
+    },
+    "ws.l2Book": {
+      "metric_kind": "time_to_first_event",
+      "stats": {
+        "count": 1,
+        "min_ms": 1496.681,
+        "p50_ms": 1496.681,
+        "p95_ms": 1496.681,
+        "max_ms": 1496.681,
+        "avg_ms": 1496.681
+      },
+      "event_age_stats": {
+        "count": 1,
+        "min_ms": 833.0,
+        "p50_ms": 833.0,
+        "p95_ms": 833.0,
+        "max_ms": 833.0,
+        "avg_ms": 833.0
+      },
+      "availability": {
+        "state": "ok",
+        "reason": "all_attempts_succeeded"
+      },
+      "ok": 1,
+      "failed": 0,
+      "errors": [],
+      "events": [
+        {
+          "attempt": 1,
+          "start_time_ms": 1773109920394,
+          "start_time_iso_utc": "2026-03-10T02:32:00.394+00:00",
+          "start_perf_counter_s": 90579.360732125,
+          "end_time_ms": 1773109921890,
+          "end_time_iso_utc": "2026-03-10T02:32:01.890+00:00",
+          "end_perf_counter_s": 90580.85741325,
+          "latency_ms": 1496.681,
+          "ok": true,
+          "stream_channel": "l2Book",
+          "sdk_reported_latency_ms": 1159.26,
+          "event_ts_ms": 1773109921057,
+          "event_age_ms": 833
+        }
+      ]
+    }
+  },
+  "summary_by_feed_type": {
+    "ws": {
+      "feeds": [
+        "ws.allMids",
+        "ws.trades",
+        "ws.l2Book"
+      ],
+      "samples": {
+        "ok": 3,
+        "failed": 0,
+        "total": 3,
+        "success_rate_pct": 100.0
+      },
+      "aggregate_stats": {
+        "count": 3,
+        "min_ms": 1496.681,
+        "p50_ms": 1628.992,
+        "p95_ms": 2513.189,
+        "max_ms": 2611.433,
+        "avg_ms": 1912.369
+      },
+      "latency_profile": "elevated",
+      "overview": "ws: p50=1628.992 ms, p95=2513.189 ms, success=100.0%"
+    }
+  },
+  "summary_by_metric_kind": {
+    "time_to_first_event": {
+      "feeds": [
+        "ws.allMids",
+        "ws.trades",
+        "ws.l2Book"
+      ],
+      "samples": {
+        "ok": 3,
+        "failed": 0,
+        "total": 3,
+        "success_rate_pct": 100.0
+      },
+      "latency_stats": {
+        "count": 3,
+        "min_ms": 1496.681,
+        "p50_ms": 1628.992,
+        "p95_ms": 2513.189,
+        "max_ms": 2611.433,
+        "avg_ms": 1912.369
+      },
+      "event_age_stats": {
+        "count": 2,
+        "min_ms": 833.0,
+        "p50_ms": 2507.0,
+        "p95_ms": 4013.6,
+        "max_ms": 4181.0,
+        "avg_ms": 2507.0
+      },
+      "overview": "time_to_first_event: p50=1628.992 ms, p95=2513.189 ms, event_age_p50=2507.0 ms"
+    }
+  },
+  "availability_alerts": [],
+  "exit_recommendation": {
+    "state": "ok",
+    "code": 0
+  }
+}

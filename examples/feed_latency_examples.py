@@ -19,6 +19,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from hypercore_sdk import HyperCoreAPI, SDKConfig
+from hypercore_sdk.benchmark_models import AvailabilityAlert, BenchmarkReport, FeedResult
 from hypercore_sdk.example_auth import (
     disk_ws_key_candidates,
     grpc_key_candidates,
@@ -31,7 +32,11 @@ from hypercore_sdk.example_auth import (
 )
 from hypercore_sdk.grpc_client import GrpcClient, GrpcConnectionConfig
 from hypercore_sdk.stats import summarize_latencies
-from hypercore_sdk.transport_diagnostics import classify_http_exception, summarize_event_availability
+from hypercore_sdk.transport_diagnostics import (
+    classify_http_exception,
+    recommend_exit,
+    summarize_event_availability,
+)
 from hypercore_sdk.ws import get_price_from_ws
 
 
@@ -138,7 +143,7 @@ def _extract_event_ts_ms(payload: object) -> int | None:
     return None
 
 
-def _result_payload(events: list[dict[str, Any]], *, metric_kind: str) -> dict[str, Any]:
+def _result_payload(events: list[dict[str, Any]], *, metric_kind: str) -> FeedResult:
     latencies_ms = [float(evt["latency_ms"]) for evt in events if evt.get("ok")]
     errors = [str(evt.get("error")) for evt in events if not evt.get("ok") and evt.get("error")]
     event_ages_ms = [float(evt["event_age_ms"]) for evt in events if evt.get("ok") and evt.get("event_age_ms") is not None]
@@ -612,8 +617,8 @@ def _build_metric_kind_summary(feeds: dict[str, dict[str, Any]]) -> dict[str, An
     return summary
 
 
-def _build_availability_alerts(feeds: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    alerts: list[dict[str, Any]] = []
+def _build_availability_alerts(feeds: dict[str, dict[str, Any]]) -> list[AvailabilityAlert]:
+    alerts: list[AvailabilityAlert] = []
     for feed_name, feed_result in feeds.items():
         availability = feed_result.get("availability")
         if not isinstance(availability, dict):
@@ -633,8 +638,22 @@ def _build_availability_alerts(feeds: dict[str, dict[str, Any]]) -> list[dict[st
     return alerts
 
 
-def build_parser() -> argparse.ArgumentParser:
+def _load_profile_defaults(path: str | None) -> tuple[str | None, dict[str, Any]]:
+    if not path:
+        return None, {}
+    profile_path = Path(path).expanduser()
+    raw = json.loads(profile_path.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict):
+        raise RuntimeError(f"Benchmark profile must be a JSON object: {profile_path}")
+    profile_name = raw.get("profile_name")
+    if profile_name is not None and not isinstance(profile_name, str):
+        raise RuntimeError(f"profile_name must be a string: {profile_path}")
+    return str(profile_path), raw
+
+
+def build_parser(profile_defaults: dict[str, Any] | None = None) -> argparse.ArgumentParser:
     load_env_credentials(PROJECT_ROOT)
+    defaults = profile_defaults or {}
     parser = argparse.ArgumentParser(
         description=(
             "Benchmark available Hypercore feeds and report latency stats. "
@@ -643,85 +662,102 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     default_cfg = SDKConfig()
-    parser.add_argument("--coin", default="BTC", help="Asset symbol for feed tests.")
-    parser.add_argument("--runs", type=int, default=5, help="Number of attempts per feed.")
-    parser.add_argument("--timeout", type=float, default=10.0, help="Timeout in seconds per call.")
+    parser.add_argument("--profile-json", default=defaults.get("profile_json"), help="Optional JSON profile with benchmark defaults.")
+    parser.add_argument("--out-json", default=defaults.get("out_json"), help="Optional path to write the full JSON report.")
+    parser.add_argument(
+        "--availability-exit-codes",
+        action=argparse.BooleanOptionalAction,
+        default=bool(defaults.get("availability_exit_codes", False)),
+        help="Exit with a machine-readable code derived from availability alerts.",
+    )
+    parser.add_argument("--coin", default=defaults.get("coin", "BTC"), help="Asset symbol for feed tests.")
+    parser.add_argument("--runs", type=int, default=int(defaults.get("runs", 5)), help="Number of attempts per feed.")
+    parser.add_argument("--timeout", type=float, default=float(defaults.get("timeout", 10.0)), help="Timeout in seconds per call.")
 
-    parser.add_argument("--rpc-url", default=os.getenv("ALEATORIC_RPC_URL", default_cfg.rpc_url))
+    parser.add_argument("--rpc-url", default=defaults.get("rpc_url", os.getenv("ALEATORIC_RPC_URL", default_cfg.rpc_url)))
     parser.add_argument(
         "--ws-url",
-        default=os.getenv("ALEATORIC_MARKET_WS_URL") or os.getenv("HYPER_MARKET_WS_URL", "wss://api.hyperliquid.xyz/ws"),
+        default=defaults.get("ws_url", os.getenv("ALEATORIC_MARKET_WS_URL") or os.getenv("HYPER_MARKET_WS_URL", "wss://api.hyperliquid.xyz/ws")),
         help="Market WS endpoint for allMids/trades/l2Book subscriptions.",
     )
     parser.add_argument(
         "--disk-ws-url",
-        default=os.getenv("ALEATORIC_DISK_WS_URL", default_cfg.ws_url),
+        default=defaults.get("disk_ws_url", os.getenv("ALEATORIC_DISK_WS_URL", default_cfg.ws_url)),
         help="Disk-sync WS endpoint for replica_cmd stream.",
     )
-    parser.add_argument("--stream-url", default=os.getenv("ALEATORIC_STREAM_URL", default_cfg.unified_stream_url))
-    parser.add_argument("--grpc-target", default=os.getenv("ALEATORIC_GRPC_TARGET", default_cfg.grpc_target), help="host:port")
-    parser.add_argument("--grpc-server-name", default=os.getenv("ALEATORIC_GRPC_SERVER_NAME", default_cfg.grpc_server_name))
-    parser.add_argument("--grpc-plaintext", action="store_true", default=False, help="Disable TLS for gRPC.")
-    parser.add_argument("--grpc-heartbeat-s", type=int, default=10)
+    parser.add_argument("--stream-url", default=defaults.get("stream_url", os.getenv("ALEATORIC_STREAM_URL", default_cfg.unified_stream_url)))
+    parser.add_argument("--grpc-target", default=defaults.get("grpc_target", os.getenv("ALEATORIC_GRPC_TARGET", default_cfg.grpc_target)), help="host:port")
+    parser.add_argument("--grpc-server-name", default=defaults.get("grpc_server_name", os.getenv("ALEATORIC_GRPC_SERVER_NAME", default_cfg.grpc_server_name)))
+    parser.add_argument(
+        "--grpc-plaintext",
+        action=argparse.BooleanOptionalAction,
+        default=bool(defaults.get("grpc_plaintext", False)),
+        help="Disable TLS for gRPC.",
+    )
+    parser.add_argument("--grpc-heartbeat-s", type=int, default=int(defaults.get("grpc_heartbeat_s", 10)))
     parser.add_argument(
         "--grpc-subscriptions",
-        default="allMids,trades,l2Book",
+        default=defaults.get("grpc_subscriptions", "allMids,trades,l2Book"),
         help="Comma-separated gRPC StreamMids subscriptions to benchmark.",
     )
     parser.add_argument(
         "--grpc-include-liquidations",
         action=argparse.BooleanOptionalAction,
-        default=os.getenv("HYPER_GRPC_INCLUDE_LIQUIDATIONS", "false").lower() in {"1", "true", "yes", "on"},
+        default=bool(defaults.get("grpc_include_liquidations", os.getenv("HYPER_GRPC_INCLUDE_LIQUIDATIONS", "false").lower() in {"1", "true", "yes", "on"})),
         help="Also benchmark the dedicated PriceService/StreamLiquidations endpoint.",
     )
     parser.add_argument(
         "--grpc-liquidations-heartbeat-s",
         type=int,
-        default=int(os.getenv("HYPER_GRPC_LIQ_HEARTBEAT_S", "1")),
+        default=int(defaults.get("grpc_liquidations_heartbeat_s", os.getenv("HYPER_GRPC_LIQ_HEARTBEAT_S", "1"))),
         help="Heartbeat interval for StreamLiquidations benchmark.",
     )
 
-    parser.add_argument("--api-key", default=None)
-    parser.add_argument("--rpc-key", default=None)
-    parser.add_argument("--grpc-key", default=None)
-    parser.add_argument("--ws-key", default=None)
-    parser.add_argument("--disk-ws-key", default=None)
-    parser.add_argument("--unified-key", default=None)
+    parser.add_argument("--api-key", default=defaults.get("api_key"))
+    parser.add_argument("--rpc-key", default=defaults.get("rpc_key"))
+    parser.add_argument("--grpc-key", default=defaults.get("grpc_key"))
+    parser.add_argument("--ws-key", default=defaults.get("ws_key"))
+    parser.add_argument("--disk-ws-key", default=defaults.get("disk_ws_key"))
+    parser.add_argument("--unified-key", default=defaults.get("unified_key"))
     parser.add_argument(
         "--ws-max-size",
-        default=os.getenv("HYPER_WS_MAX_SIZE", "none"),
+        default=defaults.get("ws_max_size", os.getenv("HYPER_WS_MAX_SIZE", "none")),
         help="Max WS frame size in bytes. Use 'none' to disable limit (recommended for disk feed).",
     )
     parser.add_argument(
         "--unified-min-interval-ms",
         type=float,
-        default=float(os.getenv("HYPER_UNIFIED_MIN_INTERVAL_MS", "700")),
+        default=float(defaults.get("unified_min_interval_ms", os.getenv("HYPER_UNIFIED_MIN_INTERVAL_MS", "700"))),
         help="Minimum delay between unified requests to reduce 429s.",
     )
     parser.add_argument(
         "--unified-retry-429",
         type=int,
-        default=int(os.getenv("HYPER_UNIFIED_RETRY_429", "1")),
+        default=int(defaults.get("unified_retry_429", os.getenv("HYPER_UNIFIED_RETRY_429", "1"))),
         help="Retry count per unified request when 429 is returned.",
     )
     parser.add_argument(
         "--verify-tls",
         action=argparse.BooleanOptionalAction,
-        default=default_cfg.verify_tls,
+        default=bool(defaults.get("verify_tls", default_cfg.verify_tls)),
         help="Verify TLS certificates (enabled by default).",
     )
 
-    parser.add_argument("--skip-rpc", action="store_true", default=False)
-    parser.add_argument("--skip-ws", action="store_true", default=False)
-    parser.add_argument("--skip-disk-ws", action="store_true", default=False)
-    parser.add_argument("--skip-grpc", action="store_true", default=False)
-    parser.add_argument("--skip-unified", action="store_true", default=False)
+    parser.add_argument("--skip-rpc", action=argparse.BooleanOptionalAction, default=bool(defaults.get("skip_rpc", False)))
+    parser.add_argument("--skip-ws", action=argparse.BooleanOptionalAction, default=bool(defaults.get("skip_ws", False)))
+    parser.add_argument("--skip-disk-ws", action=argparse.BooleanOptionalAction, default=bool(defaults.get("skip_disk_ws", False)))
+    parser.add_argument("--skip-grpc", action=argparse.BooleanOptionalAction, default=bool(defaults.get("skip_grpc", False)))
+    parser.add_argument("--skip-unified", action=argparse.BooleanOptionalAction, default=bool(defaults.get("skip_unified", False)))
 
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    bootstrap = argparse.ArgumentParser(add_help=False)
+    bootstrap.add_argument("--profile-json")
+    bootstrap_known, _ = bootstrap.parse_known_args(argv)
+    profile_path, profile_defaults = _load_profile_defaults(bootstrap_known.profile_json)
+    args = build_parser(profile_defaults).parse_args(argv)
     ws_max_size = _parse_ws_max_size(args.ws_max_size)
     rpc_resolution = pick_key(args.rpc_key, [("api_key", args.api_key), *rpc_key_candidates()])
     rpc_key = rpc_resolution.value
@@ -750,10 +786,12 @@ def main(argv: list[str] | None = None) -> int:
         grpc_server_name=args.grpc_server_name,
     )
 
-    output: dict[str, Any] = {
+    output: BenchmarkReport = {
         "coin": args.coin,
         "runs": args.runs,
         "timeout_s": args.timeout,
+        "profile_name": profile_defaults.get("profile_name") if profile_defaults else None,
+        "profile_path": profile_path,
         "measurement_notes": {
             "request_response_rtt": "Full request/response latency measured with local monotonic clock.",
             "time_to_first_event": "Connect+subscribe until first qualifying stream event is received.",
@@ -900,7 +938,14 @@ def main(argv: list[str] | None = None) -> int:
     output["summary_by_feed_type"] = _build_feed_type_summary(output["feeds"])
     output["summary_by_metric_kind"] = _build_metric_kind_summary(output["feeds"])
     output["availability_alerts"] = _build_availability_alerts(output["feeds"])
-    print(json.dumps(output, indent=2))
+    output["exit_recommendation"] = recommend_exit([alert["state"] for alert in output["availability_alerts"]])
+
+    rendered = json.dumps(output, indent=2)
+    print(rendered)
+    if args.out_json:
+        Path(args.out_json).expanduser().write_text(rendered + "\n", encoding="utf-8")
+    if args.availability_exit_codes:
+        return int(output["exit_recommendation"]["code"])
     return 0
 
 

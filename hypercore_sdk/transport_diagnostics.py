@@ -8,6 +8,26 @@ import httpx
 UPSTREAM_UNAVAILABLE_STATUS_CODES = frozenset({502, 503, 504})
 AUTH_DENIED_STATUS_CODES = frozenset({401, 403})
 RATE_LIMIT_STATUS_CODES = frozenset({429})
+AVAILABILITY_EXIT_CODES = {
+    "ok": 0,
+    "unknown": 0,
+    "degraded": 10,
+    "rate_limited": 11,
+    "upstream_unavailable": 12,
+    "unreachable": 13,
+    "auth_denied": 14,
+    "error": 15,
+}
+AVAILABILITY_PRIORITY = {
+    "ok": 0,
+    "unknown": 0,
+    "degraded": 10,
+    "rate_limited": 20,
+    "upstream_unavailable": 30,
+    "unreachable": 40,
+    "auth_denied": 50,
+    "error": 60,
+}
 
 
 def classify_http_status_code(status_code: int) -> dict[str, Any]:
@@ -101,4 +121,45 @@ def summarize_event_availability(events: Sequence[dict[str, Any]]) -> dict[str, 
         "reason": "all_attempts_failed_mixed_errors",
         "error_kinds": error_kinds,
         "status_codes": status_codes,
+    }
+
+
+def availability_state_from_result(result: dict[str, Any]) -> str:
+    if result.get("ok"):
+        return "ok"
+    availability = result.get("availability")
+    if isinstance(availability, dict):
+        state = availability.get("state")
+        if isinstance(state, str):
+            return state
+    if isinstance(availability, str):
+        if availability == "denied":
+            return "auth_denied"
+        if availability == "degraded":
+            return "rate_limited"
+        if availability in {"upstream_unavailable", "unreachable"}:
+            return availability
+    error_kind = result.get("error_kind")
+    if error_kind == "auth_denied":
+        return "auth_denied"
+    if error_kind == "rate_limited":
+        return "rate_limited"
+    if error_kind == "upstream_unavailable":
+        return "upstream_unavailable"
+    if error_kind == "transport_error":
+        return "unreachable"
+    if error_kind == "runtime_error":
+        return "error"
+    return "error"
+
+
+def recommend_exit(states: Sequence[str]) -> dict[str, Any]:
+    active_states = [state for state in states if state not in {"ok", "unknown"}]
+    if not active_states:
+        return {"state": "ok", "code": AVAILABILITY_EXIT_CODES["ok"]}
+
+    winning_state = max(active_states, key=lambda state: AVAILABILITY_PRIORITY.get(state, AVAILABILITY_PRIORITY["error"]))
+    return {
+        "state": winning_state,
+        "code": AVAILABILITY_EXIT_CODES.get(winning_state, AVAILABILITY_EXIT_CODES["error"]),
     }

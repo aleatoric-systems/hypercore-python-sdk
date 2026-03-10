@@ -1,0 +1,13 @@
+{
+  "profile_name": "aleatoric_grpc_core",
+  "coin": "BTC",
+  "runs": 1,
+  "timeout": 5.0,
+  "skip_rpc": true,
+  "skip_ws": true,
+  "skip_disk_ws": true,
+  "skip_unified": true,
+  "grpc_target": "hl.grpc.aleatoric.systems:443",
+  "grpc_subscriptions": "l2Book,trades",
+  "grpc_include_liquidations": false
+}

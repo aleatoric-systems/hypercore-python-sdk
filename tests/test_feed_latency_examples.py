@@ -74,3 +74,29 @@ def test_build_availability_alerts_reports_non_ok_feeds() -> None:
             "status_codes": [502],
         }
     ]
+
+
+def test_load_profile_defaults_reads_json_profile(tmp_path: Path) -> None:
+    module = _load_module()
+    profile_path = tmp_path / "profile.json"
+    profile_path.write_text('{"profile_name":"ws-only","runs":2,"skip_rpc":true}', encoding="utf-8")
+
+    loaded_path, defaults = module._load_profile_defaults(str(profile_path))
+
+    assert loaded_path == str(profile_path)
+    assert defaults == {
+        "profile_name": "ws-only",
+        "runs": 2,
+        "skip_rpc": True,
+    }
+
+
+def test_build_parser_allows_overriding_profile_boolean_defaults() -> None:
+    module = _load_module()
+
+    args = module.build_parser({"skip_rpc": True, "grpc_plaintext": True}).parse_args(
+        ["--no-skip-rpc", "--no-grpc-plaintext"]
+    )
+
+    assert args.skip_rpc is False
+    assert args.grpc_plaintext is False

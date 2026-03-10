@@ -159,6 +159,15 @@ python3 examples/feed_latency_examples.py --coin BTC --runs 5 \
   --ws-max-size none \
   --unified-min-interval-ms 700 \
   --unified-retry-429 1
+
+# Reproducible profiles + checked-in baselines
+python3 examples/feed_latency_examples.py \
+  --profile-json examples/benchmark_profiles/aleatoric_market_ws.json \
+  --out-json examples/benchmark_baselines/aleatoric_market_ws.latest.json
+
+python3 examples/feed_latency_examples.py \
+  --profile-json examples/benchmark_profiles/aleatoric_grpc_core.json \
+  --availability-exit-codes
 ```
 
 Multi-provider comparison (Aleatoric vs public vs HyperRPC vs Dwellir):
@@ -179,7 +188,8 @@ python3 examples/provider_benchmark_matrix.py \
 `examples/providers.example.json` now contains only live baseline endpoints (Aleatoric + Hyperliquid public).
 Aleatoric gRPC examples now prefer `ALEATORIC_GRPC_KEY`, then RPC-scoped keys (`RPC_GATEWAY_KEY`, `RPC_KEY`, `HYPER_API_KEY`), and only fall back to `GRPC_STREAM_KEY` / `UNIFIED_STREAM_KEY` for legacy deployments.
 If `--grpc-include-liquidations` is enabled but bridge liquidation topics are not configured, that check is reported as skipped (not a provider failure).
-The benchmark output now also includes `auth_key_sources` and `availability_alerts`, so upstream HTTP `502/503/504` failures are surfaced as `upstream_unavailable` instead of generic latency regressions.
+The benchmark output now also includes `auth_key_sources`, `availability_alerts`, and `exit_recommendation`, so upstream HTTP `502/503/504` failures are surfaced as `upstream_unavailable` instead of generic latency regressions.
+Shipped profiles live in `examples/benchmark_profiles/`, and checked-in March 10, 2026 baseline snapshots live in `examples/benchmark_baselines/`.
 
 Live orderbook ladder + trades console app:
 
@@ -224,4 +234,4 @@ CLI equivalent:
 hypercore-sdk grpc liquidations --coin BTC --max-messages 20
 ```
 
-All example scripts auto-load credentials from `api/.env` first, then `.env` in the repo root, and accept either `API_KEY` or `HYPER_API_KEY`. The gRPC examples prefer RPC-scoped keys before unified-stream fallbacks, and the preflight/benchmark scripts now classify upstream HTTP outages separately from auth failures.
+All example scripts auto-load credentials from `api/.env` first, then `.env` in the repo root, and accept either `API_KEY` or `HYPER_API_KEY`. The gRPC examples prefer RPC-scoped keys before unified-stream fallbacks, and the preflight/benchmark scripts now classify upstream HTTP outages separately from auth failures. `--availability-exit-codes` enables state-specific exit codes for automation.

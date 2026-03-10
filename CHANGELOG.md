@@ -27,6 +27,7 @@ All notable changes to this project are documented in this file.
 - Provider benchmark and auth preflight output now make scoped endpoint auth failures explicit, reducing false attribution of partial-provider results to latency regressions.
 - Example credential loading and scoped key selection are now centralized in `hypercore_sdk/example_auth.py`, removing drift across benchmark, preflight, provider-matrix, and gRPC live examples.
 - Benchmark and preflight HTTP checks now classify upstream `502/503/504` responses as `upstream_unavailable`, and feed benchmark output now includes `auth_key_sources` plus `availability_alerts`.
+- Feed benchmark output is now typed via `hypercore_sdk/benchmark_models.py`, supports `--profile-json` / `--out-json`, ships reproducible benchmark profiles plus March 10, 2026 baseline snapshots, and can emit machine-readable availability exit codes.
 - `examples/grpc_l2book_trades_console.py` now:
   - reports which key source it selected
   - runs a gRPC health preflight before streaming

@@ -23,6 +23,7 @@ Last updated: 2026-03-10
 - Shared example auth/env helper module for consistent scoped key selection across benchmark, preflight, and gRPC live tools
 - gRPC examples now prefer RPC-scoped keys before unified-stream fallbacks
 - Benchmark/preflight output now classify upstream HTTP `502/503/504` failures as `upstream_unavailable`
+- Benchmark output now has typed report models, shipped JSON profiles, checked-in baseline snapshots, and machine-readable `exit_recommendation` codes
 - GitHub Actions CI and tag-driven release automation cover tests, mypy, package build, and `twine check`
 - gRPC console now shows selected key source and distinguishes:
   - health success + stream authorization denial
@@ -51,6 +52,6 @@ Last updated: 2026-03-10
 ## Near-Term Next Work
 
 1. Investigate and restore `https://rpc.aleatoric.systems/` after the repeated `502 Bad Gateway` results observed on 2026-03-10.
-2. Add reproducible benchmark profiles and baseline result snapshots.
-3. Add typed response models for benchmark output JSON.
-4. Decide whether preflight/benchmark availability states should emit machine-readable exit codes per failure class.
+2. Add automated drift comparison between fresh profile runs and the checked-in baseline snapshots.
+3. Extend the typed report/output model discipline to provider-matrix aggregation results.
+4. Decide whether preflight strict mode should default to the new availability-specific exit codes in CI/operator automation.
