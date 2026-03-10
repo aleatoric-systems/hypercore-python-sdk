@@ -24,6 +24,7 @@ All notable changes to this project are documented in this file.
   - gRPC default `hl.grpc.aleatoric.systems:443`
 - Feed latency benchmark now records per-attempt audit stamps, metric-kind summaries, and event-age stats where source timestamps exist.
 - Key selection hardened across feed benchmark, matrix runner, and preflight script to ignore malformed placeholder keys and prefer RPC-scoped keys for gRPC checks.
+- Provider benchmark and auth preflight output now make scoped endpoint auth failures explicit, reducing false attribution of partial-provider results to latency regressions.
 - `examples/grpc_l2book_trades_console.py` now:
   - reports which key source it selected
   - runs a gRPC health preflight before streaming
