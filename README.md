@@ -37,9 +37,12 @@ python -m pip install -e '.[dev]'
 cd /Users/jaws/research/dev/aleatoric/public/hypercore-python-sdk
 pytest
 mypy -p hypercore_sdk
+python -m build
+python -m twine check dist/*
 ```
 
 Coverage output is written to `coverage.xml`.
+GitHub Actions now runs the same validation on push/PR, and tagged `v*` releases build artifacts and publish a GitHub release.
 
 ## Project Tracking Docs
 
@@ -176,6 +179,7 @@ python3 examples/provider_benchmark_matrix.py \
 `examples/providers.example.json` now contains only live baseline endpoints (Aleatoric + Hyperliquid public).
 Aleatoric gRPC examples now prefer `ALEATORIC_GRPC_KEY`, then RPC-scoped keys (`RPC_GATEWAY_KEY`, `RPC_KEY`, `HYPER_API_KEY`), and only fall back to `GRPC_STREAM_KEY` / `UNIFIED_STREAM_KEY` for legacy deployments.
 If `--grpc-include-liquidations` is enabled but bridge liquidation topics are not configured, that check is reported as skipped (not a provider failure).
+The benchmark output now also includes `auth_key_sources` and `availability_alerts`, so upstream HTTP `502/503/504` failures are surfaced as `upstream_unavailable` instead of generic latency regressions.
 
 Live orderbook ladder + trades console app:
 
@@ -220,4 +224,4 @@ CLI equivalent:
 hypercore-sdk grpc liquidations --coin BTC --max-messages 20
 ```
 
-All example scripts auto-load credentials from `api/.env` first, then `.env` in the repo root, and accept either `API_KEY` or `HYPER_API_KEY`. The gRPC examples prefer RPC-scoped keys before unified-stream fallbacks.
+All example scripts auto-load credentials from `api/.env` first, then `.env` in the repo root, and accept either `API_KEY` or `HYPER_API_KEY`. The gRPC examples prefer RPC-scoped keys before unified-stream fallbacks, and the preflight/benchmark scripts now classify upstream HTTP outages separately from auth failures.

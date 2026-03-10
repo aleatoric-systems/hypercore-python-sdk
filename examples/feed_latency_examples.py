@@ -5,7 +5,6 @@ import argparse
 import asyncio
 import json
 import os
-import re
 import sys
 import time
 from datetime import datetime, timezone
@@ -19,98 +18,21 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-
-def _load_env_credentials() -> None:
-    candidates = [
-        PROJECT_ROOT / "api" / ".env",
-        PROJECT_ROOT / ".env",
-        Path.cwd() / "api" / ".env",
-        Path.cwd() / ".env",
-    ]
-
-    for path in candidates:
-        if not path.is_file():
-            continue
-        for raw_line in path.read_text(encoding="utf-8").splitlines():
-            line = raw_line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if line.startswith("export "):
-                line = line[7:].strip()
-            if "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            key = key.strip()
-            value = value.strip()
-            if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
-                value = value[1:-1]
-            if key and key not in os.environ:
-                os.environ[key] = value
-
-    if "HYPER_API_KEY" not in os.environ and "API_KEY" in os.environ:
-        os.environ["HYPER_API_KEY"] = os.environ["API_KEY"]
-    if "RPC_GATEWAY_KEY" not in os.environ and "RPC_KEY" in os.environ:
-        os.environ["RPC_GATEWAY_KEY"] = os.environ["RPC_KEY"]
-    if "UNIFIED_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
-        os.environ["UNIFIED_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
-    if "DISK_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
-        os.environ["DISK_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
-    if "GRPC_STREAM_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
-        os.environ["GRPC_STREAM_KEY"] = os.environ["RPC_GATEWAY_KEY"]
-    if "GRPC_STREAM_KEY" not in os.environ and "HYPER_API_KEY" in os.environ:
-        os.environ["GRPC_STREAM_KEY"] = os.environ["HYPER_API_KEY"]
-    if "HYPER_API_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
-        os.environ["HYPER_API_KEY"] = os.environ["RPC_GATEWAY_KEY"]
-
-
-_load_env_credentials()
-
 from hypercore_sdk import HyperCoreAPI, SDKConfig
+from hypercore_sdk.example_auth import (
+    disk_ws_key_candidates,
+    grpc_key_candidates,
+    load_env_credentials,
+    mask_key,
+    market_ws_key_candidates,
+    pick_key,
+    rpc_key_candidates,
+    unified_key_candidates,
+)
 from hypercore_sdk.grpc_client import GrpcClient, GrpcConnectionConfig
 from hypercore_sdk.stats import summarize_latencies
+from hypercore_sdk.transport_diagnostics import classify_http_exception, summarize_event_availability
 from hypercore_sdk.ws import get_price_from_ws
-
-
-def _split_key_list(raw: str | None) -> list[str]:
-    if not raw:
-        return []
-    parts = re.split(r"[,\s]+", raw.strip())
-    return [part for part in parts if part]
-
-
-def _clean_key(value: str | None) -> str | None:
-    if value is None:
-        return None
-    cleaned = value.strip()
-    if len(cleaned) >= 2 and cleaned[0] == cleaned[-1] and cleaned[0] in {'"', "'"}:
-        cleaned = cleaned[1:-1].strip()
-    if not cleaned:
-        return None
-    if cleaned.startswith("${") and cleaned.endswith("}"):
-        return None
-    if any(char in cleaned for char in {" ", "\t", "\n", "<", ">"}):
-        return None
-    return cleaned
-
-
-def _pick_key(explicit: str | None, candidates: list[str | None]) -> str | None:
-    normalized = _clean_key(explicit)
-    if normalized:
-        return normalized
-    for candidate in candidates:
-        normalized = _clean_key(candidate)
-        if normalized:
-            return normalized
-    return None
-
-
-def _mask_key(value: str | None) -> str | None:
-    normalized = _clean_key(value)
-    if not normalized:
-        return None
-    if len(normalized) <= 8:
-        return "***"
-    return f"{normalized[:4]}...{normalized[-4:]}"
 
 
 def _parse_ws_max_size(raw: str | None) -> int | None:
@@ -151,7 +73,13 @@ def _attempt_start(attempt: int) -> dict[str, Any]:
     }
 
 
-def _attempt_finish(base: dict[str, Any], *, ok: bool, error: str | None = None) -> dict[str, Any]:
+def _attempt_finish(
+    base: dict[str, Any],
+    *,
+    ok: bool,
+    error: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     ended_epoch_s = time.time()
     end_perf = time.perf_counter()
     start_perf = float(base["start_perf_counter_s"])
@@ -169,6 +97,8 @@ def _attempt_finish(base: dict[str, Any], *, ok: bool, error: str | None = None)
     )
     if error:
         out["error"] = error
+    if metadata:
+        out.update(metadata)
     return out
 
 
@@ -216,6 +146,7 @@ def _result_payload(events: list[dict[str, Any]], *, metric_kind: str) -> dict[s
         "metric_kind": metric_kind,
         "stats": summarize_latencies(latencies_ms).as_dict(),
         "event_age_stats": summarize_latencies(event_ages_ms).as_dict(),
+        "availability": summarize_event_availability(events),
         "ok": len(latencies_ms),
         "failed": len(errors),
         "errors": errors[:5],
@@ -254,7 +185,14 @@ def _http_get_latency(
                 response.raise_for_status()
                 events.append(_attempt_finish(evt, ok=True))
             except Exception as exc:  # pragma: no cover - network failures vary
-                events.append(_attempt_finish(evt, ok=False, error=str(exc)))
+                events.append(
+                    _attempt_finish(
+                        evt,
+                        ok=False,
+                        error=str(exc),
+                        metadata=classify_http_exception(exc),
+                    )
+                )
             if min_interval_s > 0:
                 next_allowed_at = time.perf_counter() + min_interval_s
     return _result_payload(events, metric_kind="request_response_rtt")
@@ -318,7 +256,14 @@ def _unified_sse_first_event_latency(
                             raise RuntimeError("No SSE data events received from unified stream")
                     break
             except Exception as exc:  # pragma: no cover - network failures vary
-                events.append(_attempt_finish(evt, ok=False, error=str(exc)))
+                events.append(
+                    _attempt_finish(
+                        evt,
+                        ok=False,
+                        error=str(exc),
+                        metadata=classify_http_exception(exc),
+                    )
+                )
             if min_interval_s > 0:
                 next_allowed_at = time.perf_counter() + min_interval_s
 
@@ -502,7 +447,14 @@ def _rpc_block_latency(*, api: HyperCoreAPI, runs: int) -> dict[str, Any]:
             api.block_number()
             events.append(_attempt_finish(evt, ok=True))
         except Exception as exc:  # pragma: no cover - network failures vary
-            events.append(_attempt_finish(evt, ok=False, error=str(exc)))
+            events.append(
+                _attempt_finish(
+                    evt,
+                    ok=False,
+                    error=str(exc),
+                    metadata=classify_http_exception(exc),
+                )
+            )
 
     return _result_payload(events, metric_kind="request_response_rtt")
 
@@ -660,7 +612,29 @@ def _build_metric_kind_summary(feeds: dict[str, dict[str, Any]]) -> dict[str, An
     return summary
 
 
+def _build_availability_alerts(feeds: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    alerts: list[dict[str, Any]] = []
+    for feed_name, feed_result in feeds.items():
+        availability = feed_result.get("availability")
+        if not isinstance(availability, dict):
+            continue
+        state = str(availability.get("state", "unknown"))
+        if state in {"ok", "unknown"}:
+            continue
+        alerts.append(
+            {
+                "feed": feed_name,
+                "state": state,
+                "reason": availability.get("reason"),
+                "error_kinds": availability.get("error_kinds", []),
+                "status_codes": availability.get("status_codes", []),
+            }
+        )
+    return alerts
+
+
 def build_parser() -> argparse.ArgumentParser:
+    load_env_credentials(PROJECT_ROOT)
     parser = argparse.ArgumentParser(
         description=(
             "Benchmark available Hypercore feeds and report latency stats. "
@@ -707,25 +681,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Heartbeat interval for StreamLiquidations benchmark.",
     )
 
-    parser.add_argument("--api-key", default=os.getenv("RPC_GATEWAY_KEY") or os.getenv("RPC_KEY") or default_cfg.api_key)
-    parser.add_argument("--rpc-key", default=os.getenv("RPC_GATEWAY_KEY") or os.getenv("RPC_KEY"))
-    parser.add_argument(
-        "--grpc-key",
-        default=(
-            os.getenv("ALEATORIC_GRPC_KEY")
-            or os.getenv("GRPC_STREAM_KEY")
-            or os.getenv("UNIFIED_STREAM_KEY")
-            or os.getenv("UNIFIED_KEY")
-            or os.getenv("RPC_GATEWAY_KEY")
-            or os.getenv("RPC_KEY")
-        ),
-    )
-    parser.add_argument("--ws-key", default=os.getenv("ALEATORIC_MARKET_WS_KEY") or os.getenv("HYPER_API_KEY"))
-    parser.add_argument(
-        "--disk-ws-key",
-        default=os.getenv("DISK_STREAM_KEY") or os.getenv("UNIFIED_STREAM_KEY") or os.getenv("UNIFIED_KEY"),
-    )
-    parser.add_argument("--unified-key", default=os.getenv("UNIFIED_STREAM_KEY") or os.getenv("UNIFIED_KEY"))
+    parser.add_argument("--api-key", default=None)
+    parser.add_argument("--rpc-key", default=None)
+    parser.add_argument("--grpc-key", default=None)
+    parser.add_argument("--ws-key", default=None)
+    parser.add_argument("--disk-ws-key", default=None)
+    parser.add_argument("--unified-key", default=None)
     parser.add_argument(
         "--ws-max-size",
         default=os.getenv("HYPER_WS_MAX_SIZE", "none"),
@@ -762,30 +723,19 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     ws_max_size = _parse_ws_max_size(args.ws_max_size)
-    key_list = _split_key_list(os.getenv("api_keys"))
-    first_list_key = key_list[0] if key_list else None
-
-    rpc_key = _pick_key(args.rpc_key, [args.api_key, os.getenv("HYPER_API_KEY"), os.getenv("API_KEY"), first_list_key])
-    grpc_key = _pick_key(
-        args.grpc_key,
-        [
-            args.unified_key,
-            os.getenv("ALEATORIC_GRPC_KEY"),
-            os.getenv("GRPC_STREAM_KEY"),
-            os.getenv("UNIFIED_STREAM_KEY"),
-            os.getenv("UNIFIED_KEY"),
-            rpc_key,
-            args.api_key,
-            os.getenv("HYPER_API_KEY"),
-            first_list_key,
-        ],
+    rpc_resolution = pick_key(args.rpc_key, [("api_key", args.api_key), *rpc_key_candidates()])
+    rpc_key = rpc_resolution.value
+    grpc_resolution = pick_key(args.grpc_key, [("api_key", args.api_key), *grpc_key_candidates()])
+    grpc_key = grpc_resolution.value
+    ws_resolution = pick_key(args.ws_key, [("api_key", args.api_key), *market_ws_key_candidates()])
+    ws_key = ws_resolution.value
+    disk_ws_resolution = pick_key(args.disk_ws_key, [("unified_key", args.unified_key), *disk_ws_key_candidates()])
+    disk_ws_key = disk_ws_resolution.value
+    unified_resolution = pick_key(
+        args.unified_key,
+        [("disk_ws_key", disk_ws_key), ("api_key", args.api_key), *unified_key_candidates()],
     )
-    ws_key = _pick_key(args.ws_key, [args.api_key, os.getenv("HYPER_API_KEY"), first_list_key])
-    disk_ws_key = _pick_key(
-        args.disk_ws_key,
-        [args.unified_key, os.getenv("DISK_STREAM_KEY"), os.getenv("UNIFIED_STREAM_KEY"), first_list_key],
-    )
-    unified_key = _pick_key(args.unified_key, [disk_ws_key, args.api_key, os.getenv("UNIFIED_STREAM_KEY"), first_list_key])
+    unified_key = unified_resolution.value
 
     cfg = SDKConfig(
         rpc_url=args.rpc_url,
@@ -810,11 +760,18 @@ def main(argv: list[str] | None = None) -> int:
             "event_age_ms": "Approximate freshness at receipt: now_ms - event_ts_ms (clock skew can affect this).",
         },
         "auth_key_selection": {
-            "rpc_key": _mask_key(rpc_key),
-            "grpc_key": _mask_key(grpc_key),
-            "ws_key": _mask_key(ws_key),
-            "disk_ws_key": _mask_key(disk_ws_key),
-            "unified_key": _mask_key(unified_key),
+            "rpc_key": mask_key(rpc_key),
+            "grpc_key": mask_key(grpc_key),
+            "ws_key": mask_key(ws_key),
+            "disk_ws_key": mask_key(disk_ws_key),
+            "unified_key": mask_key(unified_key),
+        },
+        "auth_key_sources": {
+            "rpc_key": rpc_resolution.source,
+            "grpc_key": grpc_resolution.source,
+            "ws_key": ws_resolution.source,
+            "disk_ws_key": disk_ws_resolution.source,
+            "unified_key": unified_resolution.source,
         },
         "latency_measurement_stamps": {
             "start_time_ms": "unix epoch milliseconds (wall clock)",
@@ -942,6 +899,7 @@ def main(argv: list[str] | None = None) -> int:
 
     output["summary_by_feed_type"] = _build_feed_type_summary(output["feeds"])
     output["summary_by_metric_kind"] = _build_metric_kind_summary(output["feeds"])
+    output["availability_alerts"] = _build_availability_alerts(output["feeds"])
     print(json.dumps(output, indent=2))
     return 0
 

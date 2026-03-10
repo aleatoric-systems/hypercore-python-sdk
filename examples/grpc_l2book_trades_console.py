@@ -20,53 +20,13 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from hypercore_sdk import SDKConfig
+from hypercore_sdk.example_auth import grpc_key_candidates, load_env_credentials, pick_key
 from hypercore_sdk.grpc_client import GrpcClient, GrpcConnectionConfig
 from hypercore_sdk.proto import hypercore_bridge_pb2 as bridge_pb2
 from hypercore_sdk.proto import hypercore_bridge_pb2_grpc as bridge_pb2_grpc
 
 
 SUBSCRIPTIONS = ("l2Book", "trades")
-
-
-def _load_env_credentials() -> None:
-    candidates = [
-        PROJECT_ROOT / "api" / ".env",
-        PROJECT_ROOT / ".env",
-        Path.cwd() / "api" / ".env",
-        Path.cwd() / ".env",
-    ]
-
-    for path in candidates:
-        if not path.is_file():
-            continue
-        for raw_line in path.read_text(encoding="utf-8").splitlines():
-            line = raw_line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if line.startswith("export "):
-                line = line[7:].strip()
-            if "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            key = key.strip()
-            value = value.strip()
-            if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
-                value = value[1:-1]
-            if key and key not in os.environ:
-                os.environ[key] = value
-
-    if "HYPER_API_KEY" not in os.environ and "API_KEY" in os.environ:
-        os.environ["HYPER_API_KEY"] = os.environ["API_KEY"]
-    if "RPC_GATEWAY_KEY" not in os.environ and "RPC_KEY" in os.environ:
-        os.environ["RPC_GATEWAY_KEY"] = os.environ["RPC_KEY"]
-    if "UNIFIED_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
-        os.environ["UNIFIED_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
-    if "DISK_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
-        os.environ["DISK_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
-    if "GRPC_STREAM_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
-        os.environ["GRPC_STREAM_KEY"] = os.environ["RPC_GATEWAY_KEY"]
-    if "GRPC_STREAM_KEY" not in os.environ and "UNIFIED_STREAM_KEY" in os.environ:
-        os.environ["GRPC_STREAM_KEY"] = os.environ["UNIFIED_STREAM_KEY"]
 
 
 @dataclass(slots=True)
@@ -156,24 +116,9 @@ def _price_delta_bps(l2book_price: float | None, trades_price: float | None) -> 
 
 def _resolve_api_key(cli_value: str | None, cfg: SDKConfig) -> tuple[str | None, str]:
     if cli_value:
-        return cli_value, "--api-key"
-
-    for env_name in (
-        "ALEATORIC_GRPC_KEY",
-        "RPC_GATEWAY_KEY",
-        "RPC_KEY",
-        "HYPER_API_KEY",
-        "GRPC_STREAM_KEY",
-        "UNIFIED_STREAM_KEY",
-        "UNIFIED_KEY",
-    ):
-        value = os.getenv(env_name)
-        if value:
-            return value, env_name
-
-    if cfg.api_key:
-        return cfg.api_key, "SDKConfig.api_key"
-    return None, "none"
+        return pick_key(cli_value, []).value, "--api-key"
+    resolution = pick_key(cli_value, [*grpc_key_candidates(), ("SDKConfig.api_key", cfg.api_key)])
+    return resolution.value, resolution.source or "none"
 
 
 def _is_auth_denial(value: str | None) -> bool:
@@ -542,7 +487,7 @@ def run_console(
 
 
 def build_parser() -> argparse.ArgumentParser:
-    _load_env_credentials()
+    load_env_credentials(PROJECT_ROOT)
     cfg = SDKConfig()
 
     parser = argparse.ArgumentParser(

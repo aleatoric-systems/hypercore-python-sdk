@@ -12,51 +12,18 @@ from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FEED_SCRIPT = PROJECT_ROOT / "examples" / "feed_latency_examples.py"
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-
-def _load_env_credentials() -> None:
-    candidates = [
-        PROJECT_ROOT / "api" / ".env",
-        PROJECT_ROOT / ".env",
-        Path.cwd() / "api" / ".env",
-        Path.cwd() / ".env",
-    ]
-
-    loaded: set[Path] = set()
-    for path in candidates:
-        if not path.is_file() or path in loaded:
-            continue
-        loaded.add(path)
-        for raw_line in path.read_text(encoding="utf-8").splitlines():
-            line = raw_line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if line.startswith("export "):
-                line = line[7:].strip()
-            if "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            key = key.strip()
-            value = value.strip()
-            if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
-                value = value[1:-1]
-            if key and key not in os.environ:
-                os.environ[key] = value
-
-    if "HYPER_API_KEY" not in os.environ and "API_KEY" in os.environ:
-        os.environ["HYPER_API_KEY"] = os.environ["API_KEY"]
-    if "RPC_GATEWAY_KEY" not in os.environ and "RPC_KEY" in os.environ:
-        os.environ["RPC_GATEWAY_KEY"] = os.environ["RPC_KEY"]
-    if "UNIFIED_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
-        os.environ["UNIFIED_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
-    if "DISK_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
-        os.environ["DISK_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
-    if "GRPC_STREAM_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
-        os.environ["GRPC_STREAM_KEY"] = os.environ["RPC_GATEWAY_KEY"]
-    if "GRPC_STREAM_KEY" not in os.environ and "HYPER_API_KEY" in os.environ:
-        os.environ["GRPC_STREAM_KEY"] = os.environ["HYPER_API_KEY"]
-    if "HYPER_API_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
-        os.environ["HYPER_API_KEY"] = os.environ["RPC_GATEWAY_KEY"]
+from hypercore_sdk.example_auth import (
+    disk_ws_key_candidates,
+    grpc_key_candidates,
+    load_env_credentials,
+    market_ws_key_candidates,
+    pick_key,
+    rpc_key_candidates,
+    unified_key_candidates,
+)
 
 
 @dataclass(slots=True)
@@ -104,16 +71,11 @@ def _from_mapping(data: dict[str, Any]) -> ProviderSpec:
 
 
 def _default_provider_specs() -> list[ProviderSpec]:
-    rpc_key = os.getenv("RPC_GATEWAY_KEY") or os.getenv("RPC_KEY") or os.getenv("HYPER_API_KEY")
-    stream_key = os.getenv("UNIFIED_STREAM_KEY") or os.getenv("UNIFIED_KEY") or os.getenv("DISK_STREAM_KEY")
-    grpc_stream_key = (
-        os.getenv("ALEATORIC_GRPC_KEY")
-        or os.getenv("GRPC_STREAM_KEY")
-        or os.getenv("RPC_GATEWAY_KEY")
-        or os.getenv("RPC_KEY")
-        or rpc_key
-        or stream_key
-    )
+    rpc_key = pick_key(None, rpc_key_candidates()).value
+    stream_key = pick_key(None, unified_key_candidates()).value
+    disk_stream_key = pick_key(None, disk_ws_key_candidates()).value
+    grpc_stream_key = pick_key(None, grpc_key_candidates()).value
+    ws_key = pick_key(None, market_ws_key_candidates()).value
 
     specs = [
         ProviderSpec(
@@ -126,8 +88,8 @@ def _default_provider_specs() -> list[ProviderSpec]:
             grpc_server_name=os.getenv("ALEATORIC_GRPC_SERVER_NAME"),
             rpc_key=rpc_key,
             grpc_key=grpc_stream_key,
-            ws_key=os.getenv("ALEATORIC_MARKET_WS_KEY") or os.getenv("HYPER_API_KEY"),
-            disk_ws_key=stream_key,
+            ws_key=ws_key,
+            disk_ws_key=disk_stream_key,
             unified_key=stream_key,
             ws_max_size=os.getenv("ALEATORIC_WS_MAX_SIZE", "none"),
             unified_min_interval_ms=float(os.getenv("ALEATORIC_UNIFIED_MIN_INTERVAL_MS", "700")),
@@ -438,7 +400,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    _load_env_credentials()
+    load_env_credentials(PROJECT_ROOT)
     args = build_parser().parse_args(argv)
 
     config_path = Path(args.providers_json) if args.providers_json else None

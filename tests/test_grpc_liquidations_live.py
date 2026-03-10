@@ -30,5 +30,7 @@ def test_build_parser_prefers_rpc_gateway_key_over_grpc_stream_key(monkeypatch) 
 
     module = _load_module()
     args = module.build_parser().parse_args([])
+    api_key = module.pick_key(args.api_key, [*module.grpc_key_candidates(), ("SDKConfig.api_key", module.SDKConfig().api_key)]).value
 
-    assert args.api_key == "rpc_key"
+    assert args.api_key is None
+    assert api_key == "rpc_key"

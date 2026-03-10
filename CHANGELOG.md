@@ -25,6 +25,8 @@ All notable changes to this project are documented in this file.
 - Feed latency benchmark now records per-attempt audit stamps, metric-kind summaries, and event-age stats where source timestamps exist.
 - Key selection hardened across feed benchmark, matrix runner, and preflight script to ignore malformed placeholder keys and prefer RPC-scoped keys for gRPC checks.
 - Provider benchmark and auth preflight output now make scoped endpoint auth failures explicit, reducing false attribution of partial-provider results to latency regressions.
+- Example credential loading and scoped key selection are now centralized in `hypercore_sdk/example_auth.py`, removing drift across benchmark, preflight, provider-matrix, and gRPC live examples.
+- Benchmark and preflight HTTP checks now classify upstream `502/503/504` responses as `upstream_unavailable`, and feed benchmark output now includes `auth_key_sources` plus `availability_alerts`.
 - `examples/grpc_l2book_trades_console.py` now:
   - reports which key source it selected
   - runs a gRPC health preflight before streaming
@@ -32,7 +34,8 @@ All notable changes to this project are documented in this file.
   - fails fast with a clear diagnosis when `PriceService` stream methods return `403/PERMISSION_DENIED`, including the broader case where health and stream RPCs are both denied by the endpoint
 - gRPC live examples now prefer `ALEATORIC_GRPC_KEY` and RPC-scoped keys before `GRPC_STREAM_KEY` / `UNIFIED_STREAM_KEY`, fixing false `403` failures in mixed-key environments.
 - README and project-state docs now explain how to distinguish local key-selection drift from endpoint-side gRPC authorization failures.
-- `AGENTS.md` now requires explicit local-vs-endpoint auth verification when gRPC example diagnostics change.
+- CI and release automation now run tests, mypy, package builds, and `twine check` for push/PR validation and tagged releases.
+- `AGENTS.md` now requires packaging validation alongside the existing gRPC local-vs-endpoint auth verification rules.
 
 ## [0.3.0] - 2026-03-08
 

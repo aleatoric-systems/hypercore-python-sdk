@@ -125,6 +125,8 @@ def test_resolve_api_key_reports_source(monkeypatch) -> None:
     monkeypatch.delenv("RPC_GATEWAY_KEY", raising=False)
     monkeypatch.delenv("RPC_KEY", raising=False)
     monkeypatch.delenv("HYPER_API_KEY", raising=False)
+    monkeypatch.delenv("API_KEY", raising=False)
+    monkeypatch.delenv("api_keys", raising=False)
 
     cfg = module.SDKConfig(api_key=None)
     api_key, source = module._resolve_api_key(None, cfg)
@@ -142,6 +144,8 @@ def test_resolve_api_key_prefers_rpc_gateway_key_over_grpc_stream_key(monkeypatc
     monkeypatch.delenv("UNIFIED_KEY", raising=False)
     monkeypatch.delenv("RPC_KEY", raising=False)
     monkeypatch.delenv("HYPER_API_KEY", raising=False)
+    monkeypatch.delenv("API_KEY", raising=False)
+    monkeypatch.delenv("api_keys", raising=False)
 
     cfg = module.SDKConfig(api_key=None)
     api_key, source = module._resolve_api_key(None, cfg)

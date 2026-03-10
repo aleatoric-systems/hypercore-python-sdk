@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import ssl
 import sys
 import time
@@ -21,94 +20,17 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from hypercore_sdk import SDKConfig
+from hypercore_sdk.example_auth import (
+    disk_ws_key_candidates,
+    grpc_key_candidates,
+    load_env_credentials,
+    mask_key,
+    pick_key,
+    rpc_key_candidates,
+    unified_key_candidates,
+)
 from hypercore_sdk.grpc_client import GrpcClient, GrpcConnectionConfig
-
-
-def _load_env_credentials() -> list[str]:
-    loaded: list[str] = []
-    candidates = [
-        PROJECT_ROOT / "api" / ".env",
-        PROJECT_ROOT / ".env",
-        Path.cwd() / "api" / ".env",
-        Path.cwd() / ".env",
-    ]
-
-    for path in candidates:
-        if not path.is_file():
-            continue
-        loaded.append(str(path))
-        for raw_line in path.read_text(encoding="utf-8").splitlines():
-            line = raw_line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if line.startswith("export "):
-                line = line[7:].strip()
-            if "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            key = key.strip()
-            value = value.strip()
-            if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
-                value = value[1:-1]
-            if key and key not in os.environ:
-                os.environ[key] = value
-
-    if "HYPER_API_KEY" not in os.environ and "API_KEY" in os.environ:
-        os.environ["HYPER_API_KEY"] = os.environ["API_KEY"]
-    if "RPC_GATEWAY_KEY" not in os.environ and "RPC_KEY" in os.environ:
-        os.environ["RPC_GATEWAY_KEY"] = os.environ["RPC_KEY"]
-    if "UNIFIED_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
-        os.environ["UNIFIED_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
-    if "DISK_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
-        os.environ["DISK_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
-    if "GRPC_STREAM_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
-        os.environ["GRPC_STREAM_KEY"] = os.environ["RPC_GATEWAY_KEY"]
-    if "GRPC_STREAM_KEY" not in os.environ and "HYPER_API_KEY" in os.environ:
-        os.environ["GRPC_STREAM_KEY"] = os.environ["HYPER_API_KEY"]
-    if "HYPER_API_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
-        os.environ["HYPER_API_KEY"] = os.environ["RPC_GATEWAY_KEY"]
-    return loaded
-
-
-def _clean_key(value: str | None) -> str | None:
-    if value is None:
-        return None
-    cleaned = value.strip()
-    if len(cleaned) >= 2 and cleaned[0] == cleaned[-1] and cleaned[0] in {'"', "'"}:
-        cleaned = cleaned[1:-1].strip()
-    if not cleaned:
-        return None
-    if cleaned.startswith("${") and cleaned.endswith("}"):
-        return None
-    if any(char in cleaned for char in {" ", "\t", "\n", "<", ">"}):
-        return None
-    return cleaned
-
-
-def _mask_key(key: str | None) -> str | None:
-    cleaned = _clean_key(key)
-    if not cleaned:
-        return None
-    if len(cleaned) <= 8:
-        return "*" * len(cleaned)
-    return f"{cleaned[:4]}...{cleaned[-4:]}"
-
-
-def _split_key_list(raw: str | None) -> list[str]:
-    if not raw:
-        return []
-    return [part for part in re.split(r"[,\s]+", raw.strip()) if part]
-
-
-def _pick_key(explicit: str | None, candidates: list[tuple[str, str | None]]) -> tuple[str | None, str | None]:
-    cleaned = _clean_key(explicit)
-    if cleaned:
-        return cleaned, "cli"
-    for source, value in candidates:
-        cleaned = _clean_key(value)
-        if cleaned:
-            return cleaned, source
-    return None, None
+from hypercore_sdk.transport_diagnostics import classify_http_exception, classify_http_status_code
 
 
 def _append_query(url: str, key: str, value: str) -> str:
@@ -145,15 +67,20 @@ def _rpc_check(*, url: str, api_key: str | None, timeout_s: float, verify_tls: b
         except Exception:
             payload = None
         has_result = isinstance(payload, dict) and "result" in payload
-        return {
+        result = {
             "ok": response.status_code == 200 and has_result,
             "status_code": response.status_code,
             "latency_ms": latency_ms,
             "has_result": has_result,
             "error": None if response.status_code == 200 and has_result else response.text[:200],
         }
+        if not result["ok"] and response.status_code != 200:
+            result.update(classify_http_status_code(response.status_code))
+        return result
     except Exception as exc:  # pragma: no cover - network failures vary
-        return {"ok": False, "error": str(exc), "latency_ms": round((time.perf_counter() - start) * 1000.0, 3)}
+        result = {"ok": False, "error": str(exc), "latency_ms": round((time.perf_counter() - start) * 1000.0, 3)}
+        result.update(classify_http_exception(exc))
+        return result
 
 
 def _unified_check(*, base_url: str, api_key: str | None, timeout_s: float, verify_tls: bool) -> dict[str, Any]:
@@ -166,14 +93,19 @@ def _unified_check(*, base_url: str, api_key: str | None, timeout_s: float, veri
             response = client.get(target, headers={"x-api-key": api_key, "accept": "application/json"})
         latency_ms = round((time.perf_counter() - start) * 1000.0, 3)
         is_json = "json" in response.headers.get("content-type", "").lower()
-        return {
+        result = {
             "ok": response.status_code == 200 and is_json,
             "status_code": response.status_code,
             "latency_ms": latency_ms,
             "error": None if response.status_code == 200 and is_json else response.text[:200],
         }
+        if not result["ok"] and response.status_code != 200:
+            result.update(classify_http_status_code(response.status_code))
+        return result
     except Exception as exc:  # pragma: no cover - network failures vary
-        return {"ok": False, "error": str(exc), "latency_ms": round((time.perf_counter() - start) * 1000.0, 3)}
+        result = {"ok": False, "error": str(exc), "latency_ms": round((time.perf_counter() - start) * 1000.0, 3)}
+        result.update(classify_http_exception(exc))
+        return result
 
 
 def _disk_ws_check(*, ws_url: str, api_key: str | None, timeout_s: float, verify_tls: bool) -> dict[str, Any]:
@@ -291,54 +223,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    loaded_env_files = _load_env_credentials()
+    loaded_env_files = load_env_credentials(PROJECT_ROOT)
     args = build_parser().parse_args(argv)
-
-    api_keys_list = _split_key_list(os.getenv("api_keys"))
-    first_list_key = api_keys_list[0] if api_keys_list else None
-    generic_key = os.getenv("HYPER_API_KEY") or os.getenv("API_KEY")
-
-    rpc_key, rpc_source = _pick_key(
-        args.rpc_key,
-        [
-            ("RPC_GATEWAY_KEY", os.getenv("RPC_GATEWAY_KEY")),
-            ("RPC_KEY", os.getenv("RPC_KEY")),
-            ("HYPER_API_KEY|API_KEY", generic_key),
-            ("api_keys[0]", first_list_key),
-        ],
-    )
-    unified_key, unified_source = _pick_key(
-        args.unified_key,
-        [
-            ("UNIFIED_STREAM_KEY", os.getenv("UNIFIED_STREAM_KEY")),
-            ("UNIFIED_KEY", os.getenv("UNIFIED_KEY")),
-            ("HYPER_API_KEY|API_KEY", generic_key),
-            ("api_keys[0]", first_list_key),
-        ],
-    )
-    ws_key, ws_source = _pick_key(
-        args.ws_key,
-        [
-            ("DISK_STREAM_KEY", os.getenv("DISK_STREAM_KEY")),
-            ("UNIFIED_STREAM_KEY", os.getenv("UNIFIED_STREAM_KEY")),
-            ("UNIFIED_KEY", os.getenv("UNIFIED_KEY")),
-            ("HYPER_API_KEY|API_KEY", generic_key),
-            ("api_keys[0]", first_list_key),
-        ],
-    )
-    grpc_key, grpc_source = _pick_key(
-        args.grpc_key,
-        [
-            ("ALEATORIC_GRPC_KEY", os.getenv("ALEATORIC_GRPC_KEY")),
-            ("RPC_GATEWAY_KEY", os.getenv("RPC_GATEWAY_KEY")),
-            ("RPC_KEY", os.getenv("RPC_KEY")),
-            ("GRPC_STREAM_KEY", os.getenv("GRPC_STREAM_KEY")),
-            ("UNIFIED_STREAM_KEY", os.getenv("UNIFIED_STREAM_KEY")),
-            ("UNIFIED_KEY", os.getenv("UNIFIED_KEY")),
-            ("HYPER_API_KEY|API_KEY", generic_key),
-            ("api_keys[0]", first_list_key),
-        ],
-    )
+    rpc_resolution = pick_key(args.rpc_key, rpc_key_candidates())
+    unified_resolution = pick_key(args.unified_key, unified_key_candidates())
+    ws_resolution = pick_key(args.ws_key, disk_ws_key_candidates())
+    grpc_resolution = pick_key(args.grpc_key, grpc_key_candidates())
+    rpc_key = rpc_resolution.value
+    unified_key = unified_resolution.value
+    ws_key = ws_resolution.value
+    grpc_key = grpc_resolution.value
 
     checks = {
         "rpc": _rpc_check(url=args.rpc_url, api_key=rpc_key, timeout_s=args.timeout, verify_tls=args.verify_tls),
@@ -370,10 +264,10 @@ def main(argv: list[str] | None = None) -> int:
             "grpc_plaintext": args.grpc_plaintext,
         },
         "keys": {
-            "rpc": {"source": rpc_source, "masked": _mask_key(rpc_key), "present": bool(rpc_key)},
-            "unified": {"source": unified_source, "masked": _mask_key(unified_key), "present": bool(unified_key)},
-            "disk_ws": {"source": ws_source, "masked": _mask_key(ws_key), "present": bool(ws_key)},
-            "grpc": {"source": grpc_source, "masked": _mask_key(grpc_key), "present": bool(grpc_key)},
+            "rpc": {"source": rpc_resolution.source, "masked": mask_key(rpc_key), "present": bool(rpc_key)},
+            "unified": {"source": unified_resolution.source, "masked": mask_key(unified_key), "present": bool(unified_key)},
+            "disk_ws": {"source": ws_resolution.source, "masked": mask_key(ws_key), "present": bool(ws_key)},
+            "grpc": {"source": grpc_resolution.source, "masked": mask_key(grpc_key), "present": bool(grpc_key)},
         },
         "checks": checks,
         "overall_ok": overall_ok,

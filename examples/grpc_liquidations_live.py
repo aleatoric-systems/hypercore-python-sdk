@@ -16,53 +16,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-
-def _load_env_credentials() -> None:
-    candidates = [
-        PROJECT_ROOT / "api" / ".env",
-        PROJECT_ROOT / ".env",
-        Path.cwd() / "api" / ".env",
-        Path.cwd() / ".env",
-    ]
-
-    for path in candidates:
-        if not path.is_file():
-            continue
-        for raw_line in path.read_text(encoding="utf-8").splitlines():
-            line = raw_line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if line.startswith("export "):
-                line = line[7:].strip()
-            if "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            key = key.strip()
-            value = value.strip()
-            if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
-                value = value[1:-1]
-            if key and key not in os.environ:
-                os.environ[key] = value
-
-    if "HYPER_API_KEY" not in os.environ and "API_KEY" in os.environ:
-        os.environ["HYPER_API_KEY"] = os.environ["API_KEY"]
-    if "RPC_GATEWAY_KEY" not in os.environ and "RPC_KEY" in os.environ:
-        os.environ["RPC_GATEWAY_KEY"] = os.environ["RPC_KEY"]
-    if "UNIFIED_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
-        os.environ["UNIFIED_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
-    if "DISK_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
-        os.environ["DISK_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
-    if "GRPC_STREAM_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
-        os.environ["GRPC_STREAM_KEY"] = os.environ["RPC_GATEWAY_KEY"]
-    if "GRPC_STREAM_KEY" not in os.environ and "UNIFIED_STREAM_KEY" in os.environ:
-        os.environ["GRPC_STREAM_KEY"] = os.environ["UNIFIED_STREAM_KEY"]
-    if "HYPER_API_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
-        os.environ["HYPER_API_KEY"] = os.environ["RPC_GATEWAY_KEY"]
-
-
-_load_env_credentials()
-
 from hypercore_sdk import SDKConfig
+from hypercore_sdk.example_auth import grpc_key_candidates, load_env_credentials, pick_key
 from hypercore_sdk.grpc_client import GrpcClient, GrpcConnectionConfig
 from hypercore_sdk.proto import hypercore_bridge_pb2 as bridge_pb2
 from hypercore_sdk.proto import hypercore_bridge_pb2_grpc as bridge_pb2_grpc
@@ -88,6 +43,7 @@ def _event_payload(item: Any) -> dict[str, Any]:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    load_env_credentials(PROJECT_ROOT)
     cfg = SDKConfig()
 
     parser = argparse.ArgumentParser(
@@ -107,16 +63,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--api-key",
-        default=(
-            os.getenv("ALEATORIC_GRPC_KEY")
-            or os.getenv("RPC_GATEWAY_KEY")
-            or os.getenv("RPC_KEY")
-            or os.getenv("HYPER_API_KEY")
-            or os.getenv("GRPC_STREAM_KEY")
-            or os.getenv("UNIFIED_STREAM_KEY")
-            or os.getenv("UNIFIED_KEY")
-            or cfg.api_key
-        ),
+        default=None,
     )
     parser.add_argument("--server-name", default=os.getenv("ALEATORIC_GRPC_SERVER_NAME", cfg.grpc_server_name), help="TLS SNI/server name override")
     parser.add_argument("--timeout", type=float, default=30.0, help="Per-RPC timeout for bounded runs.")
@@ -126,13 +73,14 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    api_key = pick_key(args.api_key, [*grpc_key_candidates(), ("SDKConfig.api_key", SDKConfig().api_key)]).value
 
     grpc_cfg = GrpcConnectionConfig(
         target=args.target,
         timeout_s=float(args.timeout),
         use_tls=not args.plaintext,
         server_name=args.server_name,
-        api_key=args.api_key,
+        api_key=api_key,
     )
     client = GrpcClient(grpc_cfg)
 

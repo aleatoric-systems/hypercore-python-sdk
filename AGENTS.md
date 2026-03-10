@@ -32,6 +32,8 @@ cd /Users/jaws/research/dev/aleatoric/public/hypercore-python-sdk
 source .venv/bin/activate
 pytest -q
 mypy -p hypercore_sdk
+python -m build
+python -m twine check dist/*
 ```
 
 ## Release/Handoff Checklist
@@ -45,6 +47,9 @@ mypy -p hypercore_sdk
 4. Update:
    - `CHANGELOG.md`
    - `PROJECT_STATE.md`
-5. For gRPC example/auth diagnostics changes:
+5. Verify packaging artifacts:
+   - `python -m build`
+   - `python -m twine check dist/*`
+6. For gRPC example/auth diagnostics changes:
    - verify the active endpoint behavior when credentials are available
    - note whether denial is local config drift or endpoint-side auth policy
