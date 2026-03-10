@@ -133,6 +133,23 @@ def test_resolve_api_key_reports_source(monkeypatch) -> None:
     assert source == "GRPC_STREAM_KEY"
 
 
+def test_resolve_api_key_prefers_rpc_gateway_key_over_grpc_stream_key(monkeypatch) -> None:
+    module = _load_module()
+    monkeypatch.setenv("GRPC_STREAM_KEY", "grpc_key")
+    monkeypatch.setenv("RPC_GATEWAY_KEY", "rpc_key")
+    monkeypatch.delenv("ALEATORIC_GRPC_KEY", raising=False)
+    monkeypatch.delenv("UNIFIED_STREAM_KEY", raising=False)
+    monkeypatch.delenv("UNIFIED_KEY", raising=False)
+    monkeypatch.delenv("RPC_KEY", raising=False)
+    monkeypatch.delenv("HYPER_API_KEY", raising=False)
+
+    cfg = module.SDKConfig(api_key=None)
+    api_key, source = module._resolve_api_key(None, cfg)
+
+    assert api_key == "rpc_key"
+    assert source == "RPC_GATEWAY_KEY"
+
+
 def test_detect_auth_diagnosis_when_health_works() -> None:
     module = _load_module()
     states = {

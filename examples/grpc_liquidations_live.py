@@ -52,6 +52,8 @@ def _load_env_credentials() -> None:
         os.environ["UNIFIED_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
     if "DISK_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
         os.environ["DISK_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
+    if "GRPC_STREAM_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
+        os.environ["GRPC_STREAM_KEY"] = os.environ["RPC_GATEWAY_KEY"]
     if "GRPC_STREAM_KEY" not in os.environ and "UNIFIED_STREAM_KEY" in os.environ:
         os.environ["GRPC_STREAM_KEY"] = os.environ["UNIFIED_STREAM_KEY"]
     if "HYPER_API_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
@@ -107,11 +109,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--api-key",
         default=(
             os.getenv("ALEATORIC_GRPC_KEY")
+            or os.getenv("RPC_GATEWAY_KEY")
+            or os.getenv("RPC_KEY")
+            or os.getenv("HYPER_API_KEY")
             or os.getenv("GRPC_STREAM_KEY")
             or os.getenv("UNIFIED_STREAM_KEY")
             or os.getenv("UNIFIED_KEY")
-            or os.getenv("RPC_GATEWAY_KEY")
-            or os.getenv("RPC_KEY")
             or cfg.api_key
         ),
     )

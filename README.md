@@ -146,7 +146,7 @@ Benchmark available feeds and latency:
 python3 examples/preflight_feed_auth.py
 python3 examples/feed_latency_examples.py --coin BTC --runs 5 \
   --rpc-key "$RPC_GATEWAY_KEY" \
-  --grpc-key "$UNIFIED_STREAM_KEY" \
+  --grpc-key "$RPC_GATEWAY_KEY" \
   --grpc-include-liquidations \
   --ws-url "wss://api.hyperliquid.xyz/ws" \
   --ws-key "" \
@@ -174,7 +174,7 @@ python3 examples/provider_benchmark_matrix.py \
 ```
 
 `examples/providers.example.json` now contains only live baseline endpoints (Aleatoric + Hyperliquid public).
-Aleatoric defaults now use `UNIFIED_STREAM_KEY` for gRPC unless `ALEATORIC_GRPC_KEY` is set.
+Aleatoric gRPC examples now prefer `ALEATORIC_GRPC_KEY`, then RPC-scoped keys (`RPC_GATEWAY_KEY`, `RPC_KEY`, `HYPER_API_KEY`), and only fall back to `GRPC_STREAM_KEY` / `UNIFIED_STREAM_KEY` for legacy deployments.
 If `--grpc-include-liquidations` is enabled but bridge liquidation topics are not configured, that check is reported as skipped (not a provider failure).
 
 Live orderbook ladder + trades console app:
@@ -204,7 +204,7 @@ If the endpoint rejects health and stream RPCs with the same key, it prints:
 - `health=auth_denied | StatusCode.PERMISSION_DENIED | Received http2 header with status: 403`
 - a fast diagnosis: `health and stream auth denied by endpoint`
 
-That broader denial indicates endpoint-side key scope or gateway policy, not a missing local key when `key_present=yes`.
+That broader denial can indicate endpoint-side key scope/gateway policy or a local mixed-key env selecting the wrong key class. Check `key_source` first; the gRPC examples now prefer RPC-scoped keys before unified-stream fallbacks.
 
 In either case, use `examples/orderbook_trades_console.py` for live viewing until the endpoint-side gRPC scope is corrected.
 
@@ -220,4 +220,4 @@ CLI equivalent:
 hypercore-sdk grpc liquidations --coin BTC --max-messages 20
 ```
 
-All example scripts auto-load credentials from `api/.env` first, then `.env` in the repo root, and accept either `API_KEY` or `HYPER_API_KEY`.
+All example scripts auto-load credentials from `api/.env` first, then `.env` in the repo root, and accept either `API_KEY` or `HYPER_API_KEY`. The gRPC examples prefer RPC-scoped keys before unified-stream fallbacks.

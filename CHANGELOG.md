@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## [Unreleased] - 2026-03-09
+## [Unreleased] - 2026-03-10
 
 ### Added
 - Dedicated liquidation support in client and examples (`StreamLiquidations` path).
@@ -29,6 +29,8 @@ All notable changes to this project are documented in this file.
   - runs a gRPC health preflight before streaming
   - renders compact gRPC auth-preflight failures instead of raw `_InactiveRpcError` blobs
   - fails fast with a clear diagnosis when `PriceService` stream methods return `403/PERMISSION_DENIED`, including the broader case where health and stream RPCs are both denied by the endpoint
+- gRPC live examples now prefer `ALEATORIC_GRPC_KEY` and RPC-scoped keys before `GRPC_STREAM_KEY` / `UNIFIED_STREAM_KEY`, fixing false `403` failures in mixed-key environments.
+- README and project-state docs now explain how to distinguish local key-selection drift from endpoint-side gRPC authorization failures.
 - `AGENTS.md` now requires explicit local-vs-endpoint auth verification when gRPC example diagnostics change.
 
 ## [0.3.0] - 2026-03-08

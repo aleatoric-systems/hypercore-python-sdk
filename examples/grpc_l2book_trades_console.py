@@ -63,10 +63,10 @@ def _load_env_credentials() -> None:
         os.environ["UNIFIED_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
     if "DISK_STREAM_KEY" not in os.environ and "UNIFIED_KEY" in os.environ:
         os.environ["DISK_STREAM_KEY"] = os.environ["UNIFIED_KEY"]
-    if "GRPC_STREAM_KEY" not in os.environ and "UNIFIED_STREAM_KEY" in os.environ:
-        os.environ["GRPC_STREAM_KEY"] = os.environ["UNIFIED_STREAM_KEY"]
     if "GRPC_STREAM_KEY" not in os.environ and "RPC_GATEWAY_KEY" in os.environ:
         os.environ["GRPC_STREAM_KEY"] = os.environ["RPC_GATEWAY_KEY"]
+    if "GRPC_STREAM_KEY" not in os.environ and "UNIFIED_STREAM_KEY" in os.environ:
+        os.environ["GRPC_STREAM_KEY"] = os.environ["UNIFIED_STREAM_KEY"]
 
 
 @dataclass(slots=True)
@@ -160,12 +160,12 @@ def _resolve_api_key(cli_value: str | None, cfg: SDKConfig) -> tuple[str | None,
 
     for env_name in (
         "ALEATORIC_GRPC_KEY",
-        "GRPC_STREAM_KEY",
-        "UNIFIED_STREAM_KEY",
-        "UNIFIED_KEY",
         "RPC_GATEWAY_KEY",
         "RPC_KEY",
         "HYPER_API_KEY",
+        "GRPC_STREAM_KEY",
+        "UNIFIED_STREAM_KEY",
+        "UNIFIED_KEY",
     ):
         value = os.getenv(env_name)
         if value:

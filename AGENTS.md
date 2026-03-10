@@ -21,7 +21,7 @@ It explicitly excludes:
 3. Update tests for every behavior change.
 4. Update `README.md`, `PROJECT_STATE.md`, and `CHANGELOG.md` in the same change.
 5. Keep examples runnable from repo root.
-6. If a gRPC example changes auth or diagnostics behavior, verify whether failures are caused by local key resolution or endpoint-side authorization before handoff.
+6. If a gRPC example changes auth or diagnostics behavior, verify whether failures are caused by local key resolution or endpoint-side authorization before handoff, including mixed-key environments where RPC-scoped and unified-stream keys coexist.
 
 ## Required Validation
 
