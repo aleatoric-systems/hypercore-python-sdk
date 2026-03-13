@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## [Unreleased] - 2026-03-10
+## [0.3.0] — 2026-03-13
 
 ### Added
 - Browser-safe unified client parity for:
