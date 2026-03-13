@@ -196,3 +196,23 @@ def test_detect_auth_diagnosis_when_health_and_streams_denied() -> None:
     )
 
     assert diagnosis == "health and stream auth denied by endpoint; selected key source: GRPC_STREAM_KEY"
+
+
+def test_detect_preflight_auth_diagnosis_when_health_works() -> None:
+    module = _load_module()
+
+    diagnosis = module._detect_preflight_auth_diagnosis(
+        module.AuthPreflight(
+            key_source="RPC_GATEWAY_KEY",
+            key_present=True,
+            health_status="SERVING",
+            health_latency_ms=8.2,
+            price_service_error_code="StatusCode.PERMISSION_DENIED",
+            price_service_error="Received http2 header with status: 403",
+        )
+    )
+
+    assert (
+        diagnosis
+        == "health works, PriceService auth denied by endpoint; streams will fail; selected key source: RPC_GATEWAY_KEY"
+    )

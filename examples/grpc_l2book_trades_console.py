@@ -65,6 +65,9 @@ class AuthPreflight:
     health_latency_ms: float | None = None
     health_error_code: str | None = None
     health_error: str | None = None
+    price_service_status: str | None = None
+    price_service_error_code: str | None = None
+    price_service_error: str | None = None
     diagnosis: str | None = None
 
 
@@ -149,6 +152,43 @@ def _run_health_preflight(cfg: GrpcConnectionConfig, key_source: str) -> AuthPre
     return preflight
 
 
+def _run_price_service_preflight(
+    cfg: GrpcConnectionConfig,
+    *,
+    coin: str,
+    preflight: AuthPreflight,
+) -> AuthPreflight:
+    try:
+        GrpcClient(cfg).get_mid_price(coin=coin)
+        preflight.price_service_status = "ok"
+    except grpc.RpcError as exc:
+        preflight.price_service_error_code = str(exc.code())
+        preflight.price_service_error = exc.details() or str(exc)
+    except Exception as exc:
+        preflight.price_service_error = str(exc)
+    return preflight
+
+
+def _detect_preflight_auth_diagnosis(preflight: AuthPreflight) -> str | None:
+    price_auth_denied = _is_auth_denial(preflight.price_service_error_code) or _is_auth_denial(preflight.price_service_error)
+    if not price_auth_denied:
+        return None
+
+    health_auth_denied = _is_auth_denial(preflight.health_error_code) or _is_auth_denial(preflight.health_error)
+    if preflight.health_status == "SERVING":
+        return (
+            "health works, PriceService auth denied by endpoint; "
+            "streams will fail; "
+            f"selected key source: {preflight.key_source}"
+        )
+    if health_auth_denied:
+        return (
+            "health and PriceService auth denied by endpoint; "
+            f"selected key source: {preflight.key_source}"
+        )
+    return None
+
+
 def _detect_auth_diagnosis(states: dict[str, FeedState], preflight: AuthPreflight, total_events: int) -> str | None:
     if total_events > 0:
         return None
@@ -206,6 +246,17 @@ def _render_screen(
         if preflight.health_error_code:
             parts.append(preflight.health_error_code)
         parts.append(preflight.health_error)
+        lines.append(" | ".join(parts))
+    if preflight.price_service_status:
+        lines.append(f"price_service={preflight.price_service_status}")
+    elif preflight.price_service_error:
+        label = "auth_denied" if (
+            _is_auth_denial(preflight.price_service_error_code) or _is_auth_denial(preflight.price_service_error)
+        ) else "error"
+        parts = [f"price_service={label}"]
+        if preflight.price_service_error_code:
+            parts.append(preflight.price_service_error_code)
+        parts.append(preflight.price_service_error)
         lines.append(" | ".join(parts))
     if preflight.diagnosis:
         lines.append(f"diagnosis={preflight.diagnosis}")
@@ -376,6 +427,8 @@ def run_console(
         api_key=api_key,
     )
     preflight = _run_health_preflight(grpc_cfg, key_source=key_source)
+    preflight = _run_price_service_preflight(grpc_cfg, coin=coin, preflight=preflight)
+    preflight.diagnosis = _detect_preflight_auth_diagnosis(preflight)
 
     stop_event = threading.Event()
     out_queue: Queue[FeedUpdate | FeedError] = Queue()
@@ -398,6 +451,20 @@ def run_console(
     total_events = 0
     last_render = 0.0
     exit_code = 0
+
+    if preflight.diagnosis:
+        frame = _render_screen(
+            coin=coin,
+            target=target,
+            heartbeat_s=heartbeat_s,
+            preflight=preflight,
+            started_at=started_at,
+            states=states,
+            history=history,
+            total_events=total_events,
+        )
+        print("\033[2J\033[H" + frame, end="", flush=True)
+        return 3
 
     for worker in workers:
         worker.start()

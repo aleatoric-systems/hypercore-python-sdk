@@ -22,6 +22,7 @@ Last updated: 2026-03-10
 - Live console examples for public WS ladder+trades and gRPC `l2Book`+`trades` feeds
 - Shared example auth/env helper module for consistent scoped key selection across benchmark, preflight, and gRPC live tools
 - gRPC examples now prefer RPC-scoped keys before unified-stream fallbacks
+- gRPC console preflights both health and `PriceService` access so endpoint auth failures stop before the live stream loop
 - Benchmark/preflight output now classify upstream HTTP `502/503/504` failures as `upstream_unavailable`
 - Benchmark output now has typed report models, shipped JSON profiles, checked-in baseline snapshots, and machine-readable `exit_recommendation` codes
 - GitHub Actions CI and tag-driven release automation cover tests, mypy, package build, and `twine check`
