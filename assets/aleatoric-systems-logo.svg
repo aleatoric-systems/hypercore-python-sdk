@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="180" viewBox="0 0 720 180" role="img" aria-label="Aleatoric Systems">
+  <rect width="720" height="180" rx="24" fill="#0b1420"/>
+  <circle cx="94" cy="90" r="42" fill="#0a7f5a"/>
+  <path d="M94 54 123 126 65 126Z" fill="#dce7ef"/>
+  <text x="160" y="83" fill="#dce7ef" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700">Aleatoric Systems</text>
+  <text x="160" y="118" fill="#8fa6b8" font-family="Arial, Helvetica, sans-serif" font-size="18">Institutional Data Infrastructure</text>
+</svg>

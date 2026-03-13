@@ -9,6 +9,7 @@ All notable changes to this project are documented in this file.
 - Public package metadata for Python distribution, including license, authors, URLs, classifiers, and package manifest controls.
 - Customer-facing documentation, contribution guide, and a basic connection example.
 - Refreshed API interface reference for external consumers and support handoff.
+- Branded GitHub-facing README assets, discoverability keywords, and production documentation.
 - GitHub Actions workflows for CI and tagged releases.
 - Browser-safe unified stream parity for all-mids, L2 book, and asset contexts.
 - Status API client, stdio MCP server, and expanded test coverage.

@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 authors = [
   { name = "Aleatoric Systems", email = "github@aleatoric.systems" }
 ]
-keywords = ["aleatoric", "hypercore", "hyperliquid", "sdk", "python", "grpc", "websocket", "mcp"]
+keywords = ["aleatoric-systems", "aleatoric", "hypercore", "hyperliquid", "sdk", "python", "grpc", "websocket", "mcp", "market-data", "synthetic-data", "backtesting", "trading", "fintech", "quantitative-finance", "perpetuals", "futures", "order-book"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",

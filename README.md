@@ -1,6 +1,36 @@
-# Aleatoric Hypercore Python SDK
+<p align="center">
+  <img src="./assets/aleatoric-systems-logo.svg" alt="Aleatoric Systems" width="220">
+</p>
 
-The Aleatoric Hypercore Python SDK provides read-only access to Hyperliquid market data and Aleatoric Systems streaming infrastructure. It packages the Python client library, CLI, examples, and an MCP server for outward-facing customer integrations.
+# Aleatoric Systems
+
+## Aleatoric MCP Client
+
+![MCP Version](https://img.shields.io/badge/MCP-2024--11--05-0a7f5a)
+![License](https://img.shields.io/badge/license-Apache%202.0-1f6feb)
+![GitHub last commit](https://img.shields.io/github/last-commit/aleatoric-systems/hypercore-python-sdk)
+![MCP Badge](https://img.shields.io/badge/JSON--RPC-2.0-444444)
+![Smithery Badge](https://img.shields.io/badge/Smithery-ready-f97316)
+![Status](https://img.shields.io/badge/status-production-0a7f5a)
+![Compliance](https://img.shields.io/badge/compliance-Aleatoric%20Engine%20API%20v0.4.7-0a7f5a)
+
+Official MCP client SDK for Aleatoric Systems: institutional-grade synthetic market data generation, unified stream access, and operator-ready service tooling.
+
+Verified Compliance: This client is aligned with Aleatoric Engine API `v0.4.7` and MCP Protocol Version `2024-11-05` over JSON-RPC 2.0. The documented examples are validated against the current production endpoint contract.
+
+Keywords: `mcp`, `market-data`, `synthetic-data`, `backtesting`, `trading`, `fintech`, `quantitative-finance`, `perpetuals`, `futures`, `order-book`
+
+## Overview
+
+The Aleatoric Hypercore Python SDK is the public Python and MCP integration surface for Aleatoric Systems. It is designed for customer-facing integrations that need:
+
+- typed JSON-RPC access
+- low-latency unified stream access
+- browser-safe all-mids, L2 book, and asset-context snapshots
+- gRPC diagnostics and bridge consumers
+- status monitoring and MCP tooling
+
+This SDK is intentionally read-only. It excludes signing, private key custody, and order placement.
 
 ## Features
 
@@ -11,8 +41,6 @@ The Aleatoric Hypercore Python SDK provides read-only access to Hyperliquid mark
 - Status API client
 - Stdio MCP server built on the SDK clients
 - Example applications and benchmark utilities
-
-This SDK is intentionally read-only. It excludes signing, private key custody, and order placement.
 
 ## Requirements
 
@@ -93,6 +121,10 @@ export HYPER_API_KEY="<rpc-key>"
 hypercore-sdk-mcp
 ```
 
+## Production
+
+Production deployment, environment, compliance, and support guidance is documented in [PRODUCTION.md](PRODUCTION.md).
+
 ## Examples
 
 - [examples/connection.py](examples/connection.py)
@@ -148,4 +180,5 @@ Container orchestration examples are documented in [DEPLOYMENT.md](DEPLOYMENT.md
 - [CHANGELOG.md](CHANGELOG.md)
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 - [DEPLOYMENT.md](DEPLOYMENT.md)
+- [PRODUCTION.md](PRODUCTION.md)
 - [LICENSE](LICENSE)
