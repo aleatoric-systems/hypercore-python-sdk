@@ -30,6 +30,7 @@ dev = [
 
 [project.scripts]
 hypercore-sdk = "hypercore_sdk.cli:main"
+hypercore-sdk-mcp = "hypercore_sdk.mcp_cli:main"
 
 [tool.setuptools]
 packages = ["hypercore_sdk", "hypercore_sdk.proto"]

@@ -65,6 +65,18 @@ class _FakeUnifiedStreamClient:
         for idx in range(max_events):
             yield {"id": idx}
 
+    def consensus_pulse(self):
+        return {"consensus_pulse": {"current_block_height": 1}}
+
+    def all_mids(self, *, dex: str = ""):
+        return {"dex": dex, "snapshot": {"BTC": "60000"}}
+
+    def l2_book(self, coin: str, *, dex: str = "", depth: int | None = None):
+        return {"coin": coin, "dex": dex, "depth": depth}
+
+    def asset_contexts(self, *, coin: str | None = None, dex: str = ""):
+        return {"coin": coin, "dex": dex, "assets": [{"coin": coin or "BTC"}]}
+
 
 class _FakeGrpcClient:
     invoke_returncode = 0
@@ -136,6 +148,10 @@ def test_cli_rpc_call_rejects_non_array_params(capsys) -> None:
         (["stream", "stats"], "status"),
         (["stream", "events", "--limit", "3"], "events"),
         (["stream", "sse", "--max-events", "2"], "events"),
+        (["stream", "consensus-pulse"], "consensus_pulse"),
+        (["stream", "all-mids"], "snapshot"),
+        (["stream", "l2-book", "--coin", "BTC", "--depth", "2"], "coin"),
+        (["stream", "asset-contexts", "--coin", "BTC"], "assets"),
     ],
 )
 def test_cli_stream_commands(monkeypatch, capsys, argv: list[str], expected_key: str) -> None:

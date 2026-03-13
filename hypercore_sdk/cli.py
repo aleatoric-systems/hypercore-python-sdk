@@ -137,6 +137,28 @@ def _build_parser() -> argparse.ArgumentParser:
     stream_sse.add_argument("--max-events", type=int, default=20)
     _add_common_network_args(stream_sse)
 
+    stream_pulse = stream_sub.add_parser("consensus-pulse", help="Get unified consensus pulse metrics.")
+    stream_pulse.add_argument("--stream-url", default=DEFAULT_CFG.unified_stream_url)
+    _add_common_network_args(stream_pulse)
+
+    stream_all_mids = stream_sub.add_parser("all-mids", help="Get browser-safe allMids snapshot from unified stream.")
+    stream_all_mids.add_argument("--stream-url", default=DEFAULT_CFG.unified_stream_url)
+    stream_all_mids.add_argument("--dex", default="")
+    _add_common_network_args(stream_all_mids)
+
+    stream_l2_book = stream_sub.add_parser("l2-book", help="Get browser-safe canonical L2 book snapshot from unified stream.")
+    stream_l2_book.add_argument("--stream-url", default=DEFAULT_CFG.unified_stream_url)
+    stream_l2_book.add_argument("--coin", required=True)
+    stream_l2_book.add_argument("--dex", default="")
+    stream_l2_book.add_argument("--depth", type=int, default=None)
+    _add_common_network_args(stream_l2_book)
+
+    stream_asset_contexts = stream_sub.add_parser("asset-contexts", help="Get funding/OI/24h volume asset contexts from unified stream.")
+    stream_asset_contexts.add_argument("--stream-url", default=DEFAULT_CFG.unified_stream_url)
+    stream_asset_contexts.add_argument("--coin", default=None)
+    stream_asset_contexts.add_argument("--dex", default="")
+    _add_common_network_args(stream_asset_contexts)
+
     grpc = sub.add_parser("grpc", help="gRPC setup and diagnostics.")
     grpc_sub = grpc.add_subparsers(dest="grpc_cmd", required=True)
 
@@ -356,6 +378,30 @@ def main(argv: list[str] | None = None) -> int:
             cfg = _sdk_cfg_from_args(args, unified_stream_url=args.stream_url)
             with UnifiedStreamClient(cfg) as stream_client:
                 _print_json({"events": list(stream_client.sse_events(max_events=args.max_events))})
+            return 0
+
+        if args.command == "stream" and args.stream_cmd == "consensus-pulse":
+            cfg = _sdk_cfg_from_args(args, unified_stream_url=args.stream_url)
+            with UnifiedStreamClient(cfg) as stream_client:
+                _print_json(stream_client.consensus_pulse())
+            return 0
+
+        if args.command == "stream" and args.stream_cmd == "all-mids":
+            cfg = _sdk_cfg_from_args(args, unified_stream_url=args.stream_url)
+            with UnifiedStreamClient(cfg) as stream_client:
+                _print_json(stream_client.all_mids(dex=args.dex))
+            return 0
+
+        if args.command == "stream" and args.stream_cmd == "l2-book":
+            cfg = _sdk_cfg_from_args(args, unified_stream_url=args.stream_url)
+            with UnifiedStreamClient(cfg) as stream_client:
+                _print_json(stream_client.l2_book(args.coin, dex=args.dex, depth=args.depth))
+            return 0
+
+        if args.command == "stream" and args.stream_cmd == "asset-contexts":
+            cfg = _sdk_cfg_from_args(args, unified_stream_url=args.stream_url)
+            with UnifiedStreamClient(cfg) as stream_client:
+                _print_json(stream_client.asset_contexts(coin=args.coin, dex=args.dex))
             return 0
 
         if args.command == "grpc" and args.grpc_cmd == "health":
