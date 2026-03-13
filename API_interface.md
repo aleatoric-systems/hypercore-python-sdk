@@ -5,13 +5,17 @@ This document is the interface contract for the Python SDK in this repository.
 Scope:
 - Python package: `hypercore_sdk`
 - Transport layers: JSON-RPC, Hyperliquid `/info`, WebSocket, gRPC
-- Dedicated unified stream transport for pre-decoded events
+- Dedicated unified stream transport for pre-decoded events and browser-safe market snapshots
+- Status API client and stdio MCP server
 - Derived intelligence layer for indexing and analytics
 
 As-of validation (March 7, 2026):
-- `pytest`: **78 passed**
-- `pytest` with coverage gate: **92.80% total coverage**
-- `mypy -p hypercore_sdk`: **no issues found** (10 source files)
+As-of validation (March 13, 2026):
+- `pytest`: **127 passed**
+- `pytest` with coverage gate: **92.45% total coverage**
+- `mypy -p hypercore_sdk`: **no issues found** (16 source files)
+- `python -m build`: **passed**
+- `python -m twine check dist/*`: **passed**
 
 ## 1. Quality, Guarantees, and Limits
 
@@ -39,8 +43,12 @@ class SDKConfig:
     ws_url: str = "wss://disk.grpc.aleatoric.systems/"
     info_url: str = "https://api.hyperliquid.xyz/info"
     unified_stream_url: str = "https://unified.grpc.aleatoric.systems"
+    status_url: str = "http://127.0.0.1:8090"
     grpc_target: str = "hl.grpc.aleatoric.systems:443"
     api_key: str | None = None
+    unified_stream_api_key: str | None = None
+    grpc_api_key: str | None = None
+    status_token: str | None = None
     timeout_s: float = 10.0
     verify_tls: bool = True
     grpc_tls: bool = True
@@ -51,6 +59,10 @@ Method:
 - `auth_headers() -> dict[str, str]`
   - Always returns `{"content-type": "application/json"}`
   - Adds `x-api-key` when configured
+
+Auth preference notes:
+- Unified stream prefers `UNIFIED_STREAM_KEY`, then falls back to `HYPER_API_KEY`
+- gRPC MCP/status wiring can use `ALEATORIC_GRPC_KEY` and `HYPER_STATUS_TOKEN`
 
 ## 2.2 `GrpcConnectionConfig`
 File: `hypercore_sdk/grpc_client.py`
@@ -136,18 +148,69 @@ Design:
 File: `hypercore_sdk/unified_stream.py`
 
 `UnifiedStreamClient` reads from pre-decoded stream endpoints using `x-api-key` auth when configured.
+It prefers `UNIFIED_STREAM_KEY` over the generic `HYPER_API_KEY`.
 
 | Method | Endpoint | Return |
 |---|---|---|
 | `stats()` | `GET /api/v1/unified/stats` | `dict[str, Any]` |
-| `events(limit=200)` | `GET /api/v1/unified/events?limit=<n>` | `dict[str, Any]` |
+| `events(limit=200, event_type=None, stream=None)` | `GET /api/v1/unified/events?...` | `dict[str, Any]` |
+| `consensus_pulse()` | `GET /api/v1/unified/consensus-pulse` | `dict[str, Any]` |
+| `all_mids(dex="")` | `GET /api/v1/unified/all-mids` | `dict[str, Any]` |
+| `l2_book(coin, dex="", depth=None)` | `GET /api/v1/unified/l2-book` | `dict[str, Any]` |
+| `asset_contexts(coin=None, dex="")` | `GET /api/v1/unified/asset-contexts` | `dict[str, Any]` |
 | `sse_events(max_events=20)` | `GET /api/v1/unified/stream` (SSE) | `Generator[dict[str, Any], None, None]` |
+| `sse_all_mids(dex="", max_events=20)` | `GET /api/v1/unified/all-mids/stream` (SSE) | `Generator[dict[str, Any], None, None]` |
+| `sse_l2_book(coin, dex="", depth=None, max_events=20)` | `GET /api/v1/unified/l2-book/stream` (SSE) | `Generator[dict[str, Any], None, None]` |
+| `sse_asset_contexts(coin=None, dex="", max_events=20)` | `GET /api/v1/unified/asset-contexts/stream` (SSE) | `Generator[dict[str, Any], None, None]` |
 
 `sse_events()` behavior:
 - Parses `data:` lines only
 - JSON-decodes each event payload
 - Yields only object payloads (`dict`)
 - Stops after `max_events`
+
+New browser-safe unified surfaces:
+- `all_mids()` is the local full-symbol snapshot for price ribbons and multi-symbol dashboards.
+- `l2_book()` is the canonical local bid/ask ladder snapshot for order-book depth and imbalance views.
+- `asset_contexts()` is the local normalized `metaAndAssetCtxs` view for funding, open interest, mark price, previous day price, and 24h notional volume.
+
+## 4.1 Status API Interface
+
+File: `hypercore_sdk/status.py`
+
+| Method | Endpoint | Return |
+|---|---|---|
+| `health()` | `GET /healthz` | `dict[str, Any]` |
+| `public_status()` | `GET /api/v1/public/status` | `dict[str, Any]` |
+| `private_status()` | `GET /api/v1/status` | `dict[str, Any]` |
+| `admin_tokens()` | `GET /api/v1/admin/tokens` | `dict[str, Any]` |
+
+`private_status()` and `admin_tokens()` use `HYPER_STATUS_TOKEN` when configured.
+
+## 4.2 MCP Interface
+
+Files:
+- `hypercore_sdk/mcp.py`
+- `hypercore_sdk/mcp_cli.py`
+
+Console entrypoint:
+- `hypercore-sdk-mcp`
+
+Current MCP tools:
+- `catalog_interfaces`
+- `grpc_get_mid_price`
+- `grpc_stream_mids_sample`
+- `grpc_get_block_number`
+- `grpc_stream_liquidations_sample`
+- `unified_get_stats`
+- `unified_get_events`
+- `unified_get_consensus_pulse`
+- `unified_get_all_mids`
+- `unified_get_l2_book`
+- `unified_get_asset_contexts`
+- `status_get_public`
+- `status_get_private`
+- `rpc_call`
 
 ## 5. WebSocket Interface
 

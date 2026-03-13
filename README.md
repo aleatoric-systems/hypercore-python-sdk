@@ -1,10 +1,14 @@
 # Hypercore Python SDK
 
+![MCP Server Included](https://img.shields.io/badge/MCP-server%20included-2ea043)
+
 Python SDK and CLI for:
 - JSON-RPC access
 - WebSocket market data
 - gRPC bridge access
-- Dedicated unified stream endpoints (pre-decoded event feed)
+- Dedicated unified stream endpoints (pre-decoded event feed, browser-safe allMids, L2 book, asset contexts)
+- Status API access
+- Stdio MCP server built on top of the SDK clients
 - High-value market/user intelligence from `/info` (L2, funding, fills, portfolio, user flow)
 
 This SDK is read-only/data-plane only. Signing and order placement interfaces are intentionally excluded.
@@ -31,6 +35,33 @@ python -m pip install --upgrade pip
 python -m pip install -e '.[dev]'
 ```
 
+## Dockerized Runtime
+
+This repo can be containerized for the SDK, CLI, examples, benchmarks, and package-build flow. The external Aleatoric bridge service is not part of this repo and is not deployed by these containers.
+
+Build the images:
+
+```bash
+cd /Users/jaws/research/dev/aleatoric/public/hypercore-python-sdk
+docker build --target runtime -t hypercore-sdk:runtime .
+docker build --target dev -t hypercore-sdk:dev .
+```
+
+Run common flows with [docker-compose.yml](docker-compose.yml):
+
+```bash
+docker compose run --rm cli --help
+docker compose --env-file .env run --rm ws-console
+docker compose --env-file .env run --rm grpc-console --coin BTC --max-events 20
+docker compose --env-file .env run --rm benchmark --coin BTC --runs 5 --skip-unified
+docker compose run --rm validate
+docker compose run --rm package
+```
+
+If the gRPC target requires VPN reachability, connect the VPN before starting the container. Docker Desktop must be able to pass container traffic over that VPN path or gRPC will fail with `StatusCode.UNAVAILABLE`.
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for the full container/runtime model.
+
 ## Quality Gates
 
 ```bash
@@ -41,14 +72,24 @@ python -m build
 python -m twine check dist/*
 ```
 
+Current validation status for the checked-in implementation:
+
+- `pytest`: `127 passed`
+- coverage gate: `92.45%`
+- `mypy -p hypercore_sdk`: clean
+- `python -m build`: passed
+- `python -m twine check dist/*`: passed
+
 Coverage output is written to `coverage.xml`.
 GitHub Actions now runs the same validation on push/PR, and tagged `v*` releases build artifacts and publish a GitHub release.
+Push/PR CI now also builds the Docker `runtime` and `dev` targets, validates `docker-compose.yml`, and runs a containerized CLI smoke. Tagged `v*` releases also publish the runtime image to `ghcr.io/<repo-owner>/hypercore-python-sdk:<tag>`.
 
 ## Project Tracking Docs
 
 - `CHANGELOG.md` - released changes and migration notes.
 - `PROJECT_STATE.md` - current implementation status and open gaps.
 - `AGENTS.md` - agent workflow and handoff conventions for this repo.
+- `DEPLOYMENT.md` - containerized runtime/build model and environment boundary.
 
 ## Troubleshooting
 
@@ -120,6 +161,10 @@ CLI access:
 hypercore-sdk stream stats
 hypercore-sdk stream events --limit 100
 hypercore-sdk stream sse --max-events 10
+hypercore-sdk stream consensus-pulse
+hypercore-sdk stream all-mids
+hypercore-sdk stream l2-book --coin BTC --depth 5
+hypercore-sdk stream asset-contexts --coin BTC
 ```
 
 Python access:
@@ -131,9 +176,72 @@ cfg = SDKConfig(unified_stream_url="https://unified.grpc.aleatoric.systems", api
 with UnifiedStreamClient(cfg) as stream:
     print(stream.stats())
     print(stream.events(limit=50))
+    print(stream.all_mids())
+    print(stream.l2_book("BTC", depth=5))
+    print(stream.asset_contexts(coin="BTC"))
     for event in stream.sse_events(max_events=5):
         print(event)
 ```
+
+## Status API
+
+```python
+from hypercore_sdk import SDKConfig, StatusClient
+
+cfg = SDKConfig(status_url="http://127.0.0.1:8090", status_token="<status-token>")
+with StatusClient(cfg) as status:
+    print(status.public_status())
+    print(status.private_status())
+```
+
+## Python MCP
+
+The Python SDK now ships a stdio MCP server built on top of the SDK clients.
+
+Install the dev environment first, then run:
+
+```bash
+cd /Users/jaws/research/dev/aleatoric/public/hypercore-python-sdk
+source .venv/bin/activate
+hypercore-sdk-mcp
+```
+
+Quick stdio smoke test:
+
+```bash
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+  | hypercore-sdk-mcp
+```
+
+Key env vars:
+
+- `HYPER_GRPC_TARGET`
+- `ALEATORIC_GRPC_KEY`
+- `HYPER_UNIFIED_STREAM_URL`
+- `UNIFIED_STREAM_KEY`
+- `HYPER_RPC_URL`
+- `HYPER_API_KEY`
+- `HYPER_STATUS_URL`
+- `HYPER_STATUS_TOKEN`
+
+The MCP server exposes:
+
+- `catalog_interfaces`
+- `grpc_get_mid_price`
+- `grpc_stream_mids_sample`
+- `grpc_get_block_number`
+- `grpc_stream_liquidations_sample`
+- `unified_get_stats`
+- `unified_get_events`
+- `unified_get_consensus_pulse`
+- `unified_get_all_mids`
+- `unified_get_l2_book`
+- `unified_get_asset_contexts`
+- `status_get_public`
+- `status_get_private`
+- `rpc_call`
 
 ## Example Apps
 
@@ -210,9 +318,11 @@ full public WebSocket depth ladder instead of the bridge's normalized feed outpu
 The gRPC console now always prints:
 - the selected key source
 - the health preflight result
+- the `PriceService` preflight result
 
-If the endpoint allows health checks but rejects `PriceService` streams, the console also prints:
-- a fast diagnosis: `health works, stream auth denied by endpoint`
+If the endpoint allows health checks but rejects `PriceService`, the console now fails before starting the
+live stream workers and prints:
+- a fast diagnosis: `health works, PriceService auth denied by endpoint; streams will fail`
 
 If the endpoint rejects health and stream RPCs with the same key, it prints:
 - `health=auth_denied | StatusCode.PERMISSION_DENIED | Received http2 header with status: 403`
