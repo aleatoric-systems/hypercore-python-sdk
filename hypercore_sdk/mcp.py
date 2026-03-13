@@ -127,6 +127,17 @@ class HypercoreMCPServer:
                 },
             },
             {
+                "name": "unified_get_liquidation_cascades",
+                "description": "Fetch recent derived liquidation cascade events from the unified sidecar.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 2000, "default": 50},
+                    },
+                    "additionalProperties": False,
+                },
+            },
+            {
                 "name": "unified_get_consensus_pulse",
                 "description": "Fetch consensus pulse metrics, including block-height and Tokyo probe status.",
                 "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
@@ -214,6 +225,7 @@ class HypercoreMCPServer:
                 "asset contexts from metaAndAssetCtxs",
                 "derived l4_delta",
                 "filtered liquidation_warning",
+                "derived liquidation_cascade",
                 "block_metrics",
                 "consensus_pulse",
             ],
@@ -222,7 +234,7 @@ class HypercoreMCPServer:
                 "trades": "grpc_stream_mids_sample(subscription=trades) or unified_get_events(stream=trades)",
                 "l2_book": "unified_get_l2_book for browser-safe canonical snapshots; grpc_stream_mids_sample(subscription=l2Book) for top-of-book",
                 "funding_oi_volume": "unified_get_asset_contexts",
-                "liquidations": "grpc_stream_liquidations_sample first, unified_get_events(event_type=liquidation_warning) second",
+                "liquidations": "grpc_stream_liquidations_sample first, unified_get_events(event_type=liquidation_warning) second, unified_get_liquidation_cascades for derived clusters",
             },
         }
 
@@ -259,6 +271,8 @@ class HypercoreMCPServer:
                 event_type=str(args["event_type"]) if "event_type" in args and args["event_type"] is not None else None,
                 stream=str(args["stream"]) if "stream" in args and args["stream"] is not None else None,
             )
+        if name == "unified_get_liquidation_cascades":
+            return self.clients.unified.liquidation_cascades(limit=int(args.get("limit", 50)))
         if name == "unified_get_consensus_pulse":
             return self.clients.unified.consensus_pulse()
         if name == "unified_get_all_mids":

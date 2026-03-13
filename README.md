@@ -226,6 +226,8 @@ Key env vars:
 - `HYPER_STATUS_URL`
 - `HYPER_STATUS_TOKEN`
 
+Python API integration for the unified sidecar now includes `UnifiedStreamClient.liquidations()` and `UnifiedStreamClient.liquidation_cascades()` for `liquidation_warning` and `liquidation_cascade` event families.
+
 The MCP server exposes:
 
 - `catalog_interfaces`
@@ -235,6 +237,7 @@ The MCP server exposes:
 - `grpc_stream_liquidations_sample`
 - `unified_get_stats`
 - `unified_get_events`
+- `unified_get_liquidation_cascades`
 - `unified_get_consensus_pulse`
 - `unified_get_all_mids`
 - `unified_get_l2_book`
@@ -336,6 +339,12 @@ Live liquidation stream from gRPC feeds:
 
 ```bash
 python3 examples/grpc_liquidations_live.py --coin BTC --max-events 20
+
+Batch unified liquidation cascade events:
+
+```bash
+hypercore-sdk stream cascades --limit 20
+```
 ```
 
 CLI equivalent:

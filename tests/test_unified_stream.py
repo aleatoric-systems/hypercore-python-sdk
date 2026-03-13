@@ -55,6 +55,8 @@ def test_stats_and_events_use_expected_endpoints_and_headers() -> None:
     fake.responses = [
         _FakeResponse({"uptime_s": 100, "status": "ok"}),
         _FakeResponse({"events": [{"id": "evt-1"}]}),
+        _FakeResponse({"events": [{"id": "evt-1"}]}),
+        _FakeResponse({"events": [{"id": "evt-1"}]}),
         _FakeResponse({"consensus_pulse": {"current_block_height": 1}}),
         _FakeResponse({"snapshot": {"BTC": "60000"}, "count": 1}),
         _FakeResponse({"coin": "BTC", "levels": {"bids": [{"px": "60000"}], "asks": []}}),
@@ -70,6 +72,8 @@ def test_stats_and_events_use_expected_endpoints_and_headers() -> None:
     ) as client:
         assert client.stats()["status"] == "ok"
         assert client.events(limit=50)["events"][0]["id"] == "evt-1"
+        assert client.liquidations(limit=3)["events"][0]["id"] == "evt-1"
+        assert client.liquidation_cascades(limit=4)["events"][0]["id"] == "evt-1"
         assert client.consensus_pulse()["consensus_pulse"]["current_block_height"] == 1
         assert client.all_mids()["snapshot"]["BTC"] == "60000"
         assert client.l2_book("BTC")["coin"] == "BTC"
@@ -77,14 +81,18 @@ def test_stats_and_events_use_expected_endpoints_and_headers() -> None:
 
     assert fake.get_calls[0]["url"] == "https://stream.example/api/v1/unified/stats"
     assert fake.get_calls[1]["url"] == "https://stream.example/api/v1/unified/events"
-    assert fake.get_calls[2]["url"] == "https://stream.example/api/v1/unified/consensus-pulse"
-    assert fake.get_calls[3]["url"] == "https://stream.example/api/v1/unified/all-mids"
-    assert fake.get_calls[4]["url"] == "https://stream.example/api/v1/unified/l2-book"
-    assert fake.get_calls[5]["url"] == "https://stream.example/api/v1/unified/asset-contexts"
+    assert fake.get_calls[2]["url"] == "https://stream.example/api/v1/unified/events"
+    assert fake.get_calls[2]["params"] == {"limit": 3, "event_type": "liquidation_warning"}
+    assert fake.get_calls[3]["url"] == "https://stream.example/api/v1/unified/events"
+    assert fake.get_calls[3]["params"] == {"limit": 4, "event_type": "liquidation_cascade"}
+    assert fake.get_calls[4]["url"] == "https://stream.example/api/v1/unified/consensus-pulse"
+    assert fake.get_calls[5]["url"] == "https://stream.example/api/v1/unified/all-mids"
+    assert fake.get_calls[6]["url"] == "https://stream.example/api/v1/unified/l2-book"
+    assert fake.get_calls[7]["url"] == "https://stream.example/api/v1/unified/asset-contexts"
     assert fake.get_calls[0]["headers"] == {"accept": "application/json", "x-api-key": "k"}
     assert fake.get_calls[1]["params"] == {"limit": 50}
-    assert fake.get_calls[4]["params"] == {"coin": "BTC"}
-    assert fake.get_calls[5]["params"] == {"coin": "BTC"}
+    assert fake.get_calls[6]["params"] == {"coin": "BTC"}
+    assert fake.get_calls[7]["params"] == {"coin": "BTC"}
     assert fake.closed is False
 
 

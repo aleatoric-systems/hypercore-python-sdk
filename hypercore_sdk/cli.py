@@ -132,6 +132,16 @@ def _build_parser() -> argparse.ArgumentParser:
     stream_events.add_argument("--limit", type=int, default=200)
     _add_common_network_args(stream_events)
 
+    stream_liquidations = stream_sub.add_parser("liquidations", help="Get unified liquidation_warning events.")
+    stream_liquidations.add_argument("--stream-url", default=DEFAULT_CFG.unified_stream_url)
+    stream_liquidations.add_argument("--limit", type=int, default=200)
+    _add_common_network_args(stream_liquidations)
+
+    stream_cascades = stream_sub.add_parser("cascades", help="Get derived liquidation_cascade events.")
+    stream_cascades.add_argument("--stream-url", default=DEFAULT_CFG.unified_stream_url)
+    stream_cascades.add_argument("--limit", type=int, default=200)
+    _add_common_network_args(stream_cascades)
+
     stream_sse = stream_sub.add_parser("sse", help="Read a bounded number of events from unified stream SSE.")
     stream_sse.add_argument("--stream-url", default=DEFAULT_CFG.unified_stream_url)
     stream_sse.add_argument("--max-events", type=int, default=20)
@@ -372,6 +382,18 @@ def main(argv: list[str] | None = None) -> int:
             cfg = _sdk_cfg_from_args(args, unified_stream_url=args.stream_url)
             with UnifiedStreamClient(cfg) as stream_client:
                 _print_json(stream_client.events(limit=args.limit))
+            return 0
+
+        if args.command == "stream" and args.stream_cmd == "liquidations":
+            cfg = _sdk_cfg_from_args(args, unified_stream_url=args.stream_url)
+            with UnifiedStreamClient(cfg) as stream_client:
+                _print_json(stream_client.liquidations(limit=args.limit))
+            return 0
+
+        if args.command == "stream" and args.stream_cmd == "cascades":
+            cfg = _sdk_cfg_from_args(args, unified_stream_url=args.stream_url)
+            with UnifiedStreamClient(cfg) as stream_client:
+                _print_json(stream_client.liquidation_cascades(limit=args.limit))
             return 0
 
         if args.command == "stream" and args.stream_cmd == "sse":

@@ -20,7 +20,7 @@ All notable changes to this project are documented in this file.
   - `tests/test_status.py`
   - `tests/test_mcp.py`
   - `tests/test_cli.py`
-- Dedicated liquidation support in client and examples (`StreamLiquidations` path).
+- Dedicated liquidation support in client and examples (`StreamLiquidations` path), plus unified `liquidation_cascade` helpers and MCP passthrough.
 - Provider matrix benchmark option for liquidation feed benchmarking.
 - Project tracking docs:
   - `PROJECT_STATE.md`
@@ -34,7 +34,7 @@ All notable changes to this project are documented in this file.
 - Live gRPC console example for side-by-side `l2Book` and `trades` bridge feeds (`examples/grpc_l2book_trades_console.py`).
 
 ### Changed
-- `hypercore_sdk/cli.py` now exposes unified commands for `consensus-pulse`, `all-mids`, `l2-book`, and `asset-contexts`.
+- `hypercore_sdk/cli.py` now exposes unified commands for `consensus-pulse`, `all-mids`, `l2-book`, `asset-contexts`, `liquidations`, and `cascades`.
 - README and API reference now document the Python MCP server and the browser-safe unified interfaces.
 - Unified stream client query construction was cleaned up to remove repeated ad hoc param-building paths while keeping request semantics unchanged.
 - Feed benchmark split between market WS and disk-sync WS.

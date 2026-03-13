@@ -36,6 +36,9 @@ class _FakeUnified:
     def events(self, limit: int = 200, *, event_type=None, stream=None):
         return {"events": [{"limit": limit, "event_type": event_type, "stream": stream}]}
 
+    def liquidation_cascades(self, limit: int = 200):
+        return {"events": [{"limit": limit, "event_type": "liquidation_cascade", "stream": "liquidation_cascade"}]}
+
     def consensus_pulse(self):
         return {"consensus_pulse": {"current_block_height": 123}}
 
@@ -97,6 +100,7 @@ def test_mcp_initialize_list_and_call() -> None:
     assert init["result"]["serverInfo"]["name"] == "hypercore-python-mcp"
     assert tools is not None
     assert any(tool["name"] == "unified_get_l2_book" for tool in tools["result"]["tools"])
+    assert any(tool["name"] == "unified_get_liquidation_cascades" for tool in tools["result"]["tools"])
     assert call is not None
     assert _payload(call)["assets"][0]["coin"] == "BTC"
 
@@ -125,6 +129,7 @@ def test_mcp_covers_tool_matrix_and_error_paths() -> None:
         ("grpc_stream_liquidations_sample", {"coin": "BTC"}, "messages"),
         ("unified_get_stats", {}, "stats"),
         ("unified_get_events", {"limit": 5, "event_type": "trade", "stream": "trades"}, "events"),
+        ("unified_get_liquidation_cascades", {"limit": 5}, "events"),
         ("unified_get_consensus_pulse", {}, "consensus_pulse"),
         ("unified_get_all_mids", {}, "snapshot"),
         ("unified_get_l2_book", {"coin": "BTC", "depth": 5}, "coin"),

@@ -154,6 +154,8 @@ It prefers `UNIFIED_STREAM_KEY` over the generic `HYPER_API_KEY`.
 |---|---|---|
 | `stats()` | `GET /api/v1/unified/stats` | `dict[str, Any]` |
 | `events(limit=200, event_type=None, stream=None)` | `GET /api/v1/unified/events?...` | `dict[str, Any]` |
+| `liquidations(limit=200)` | `GET /api/v1/unified/events?event_type=liquidation_warning` | `dict[str, Any]` |
+| `liquidation_cascades(limit=200)` | `GET /api/v1/unified/events?event_type=liquidation_cascade` | `dict[str, Any]` |
 | `consensus_pulse()` | `GET /api/v1/unified/consensus-pulse` | `dict[str, Any]` |
 | `all_mids(dex="")` | `GET /api/v1/unified/all-mids` | `dict[str, Any]` |
 | `l2_book(coin, dex="", depth=None)` | `GET /api/v1/unified/l2-book` | `dict[str, Any]` |
@@ -204,6 +206,7 @@ Current MCP tools:
 - `grpc_stream_liquidations_sample`
 - `unified_get_stats`
 - `unified_get_events`
+- `unified_get_liquidation_cascades`
 - `unified_get_consensus_pulse`
 - `unified_get_all_mids`
 - `unified_get_l2_book`

@@ -8,6 +8,10 @@ import httpx
 from .config import SDKConfig
 
 
+UNIFIED_LIQUIDATION_EVENT_TYPE = "liquidation_warning"
+UNIFIED_LIQUIDATION_CASCADE_EVENT_TYPE = "liquidation_cascade"
+
+
 class UnifiedStreamClient:
     """Client for Aleatoric dedicated unified event stream endpoints."""
 
@@ -66,6 +70,12 @@ class UnifiedStreamClient:
     def events(self, limit: int = 200, *, event_type: str | None = None, stream: str | None = None) -> dict[str, Any]:
         params = self._query_params(limit=max(1, int(limit)), event_type=event_type, stream=stream)
         return self._get_json("/api/v1/unified/events", params=params, label="events")
+
+    def liquidations(self, limit: int = 200) -> dict[str, Any]:
+        return self.events(limit=limit, event_type=UNIFIED_LIQUIDATION_EVENT_TYPE)
+
+    def liquidation_cascades(self, limit: int = 200) -> dict[str, Any]:
+        return self.events(limit=limit, event_type=UNIFIED_LIQUIDATION_CASCADE_EVENT_TYPE)
 
     def consensus_pulse(self) -> dict[str, Any]:
         return self._get_json("/api/v1/unified/consensus-pulse", label="consensus pulse")

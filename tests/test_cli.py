@@ -61,6 +61,12 @@ class _FakeUnifiedStreamClient:
     def events(self, limit: int = 200):
         return {"events": [{"id": "evt-1"}], "limit": limit}
 
+    def liquidations(self, limit: int = 200):
+        return {"events": [{"event_type": "liquidation_warning"}], "limit": limit}
+
+    def liquidation_cascades(self, limit: int = 200):
+        return {"events": [{"event_type": "liquidation_cascade"}], "limit": limit}
+
     def sse_events(self, max_events: int = 20):
         for idx in range(max_events):
             yield {"id": idx}
@@ -274,6 +280,16 @@ def test_cli_grpc_invoke_non_zero_exit(monkeypatch, capsys) -> None:
     assert code == 2
     payload = json.loads(capsys.readouterr().out)
     assert payload["returncode"] == 1
+
+
+def test_cli_stream_specialized_commands(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(cli, "UnifiedStreamClient", _FakeUnifiedStreamClient)
+
+    assert cli.main(["stream", "liquidations", "--limit", "2"]) == 0
+    assert json.loads(capsys.readouterr().out)["events"][0]["event_type"] == "liquidation_warning"
+
+    assert cli.main(["stream", "cascades", "--limit", "3"]) == 0
+    assert json.loads(capsys.readouterr().out)["events"][0]["event_type"] == "liquidation_cascade"
 
 
 def test_cli_speed_commands(monkeypatch, capsys) -> None:
