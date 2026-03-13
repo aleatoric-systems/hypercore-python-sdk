@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-03-10
+Last updated: 2026-03-13
 
 ## Current Capability
 
@@ -17,6 +17,7 @@ Last updated: 2026-03-10
 
 ### Tooling
 - CLI with typed command groups
+- Public package layout with license, contributing guide, changelog, and customer-facing quickstart docs
 - Latency benchmark suite for feed comparison
 - Provider matrix benchmark script (Aleatoric vs public vs third-party endpoints)
 - Live console examples for public WS ladder+trades and gRPC `l2Book`+`trades` feeds
@@ -26,6 +27,8 @@ Last updated: 2026-03-10
 - Benchmark/preflight output now classify upstream HTTP `502/503/504` failures as `upstream_unavailable`
 - Benchmark output now has typed report models, shipped JSON profiles, checked-in baseline snapshots, and machine-readable `exit_recommendation` codes
 - GitHub Actions CI and tag-driven release automation cover tests, mypy, package build, and `twine check`
+- API interface reference updated for public distribution and customer support handoff
+- MCP tool matrix is now contract-tested as part of the published outward-facing surface
 - gRPC console now shows selected key source and distinguishes:
   - health success + stream authorization denial
   - health authorization denial + stream authorization denial
@@ -56,3 +59,4 @@ Last updated: 2026-03-10
 2. Add automated drift comparison between fresh profile runs and the checked-in baseline snapshots.
 3. Extend the typed report/output model discipline to provider-matrix aggregation results.
 4. Decide whether preflight strict mode should default to the new availability-specific exit codes in CI/operator automation.
+5. Publish the refreshed customer package and release artifacts to the intended external distribution channels.

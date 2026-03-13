@@ -1,0 +1,84 @@
+name: hypercore-sdk
+
+x-hyper-env: &hyper-env
+  ALEATORIC_RPC_URL: ${ALEATORIC_RPC_URL:-}
+  ALEATORIC_MARKET_WS_URL: ${ALEATORIC_MARKET_WS_URL:-}
+  HYPER_MARKET_WS_URL: ${HYPER_MARKET_WS_URL:-}
+  ALEATORIC_DISK_WS_URL: ${ALEATORIC_DISK_WS_URL:-}
+  ALEATORIC_STREAM_URL: ${ALEATORIC_STREAM_URL:-}
+  ALEATORIC_GRPC_TARGET: ${ALEATORIC_GRPC_TARGET:-}
+  ALEATORIC_GRPC_SERVER_NAME: ${ALEATORIC_GRPC_SERVER_NAME:-}
+  ALEATORIC_GRPC_KEY: ${ALEATORIC_GRPC_KEY:-}
+  ALEATORIC_MARKET_WS_KEY: ${ALEATORIC_MARKET_WS_KEY:-}
+  API_KEY: ${API_KEY:-}
+  HYPER_API_KEY: ${HYPER_API_KEY:-}
+  RPC_GATEWAY_KEY: ${RPC_GATEWAY_KEY:-}
+  RPC_KEY: ${RPC_KEY:-}
+  GRPC_STREAM_KEY: ${GRPC_STREAM_KEY:-}
+  DISK_STREAM_KEY: ${DISK_STREAM_KEY:-}
+  UNIFIED_STREAM_KEY: ${UNIFIED_STREAM_KEY:-}
+  UNIFIED_KEY: ${UNIFIED_KEY:-}
+  api_keys: ${api_keys:-}
+
+x-runtime-service: &runtime-service
+  build:
+    context: .
+    target: runtime
+  image: hypercore-sdk:runtime
+  working_dir: /app
+  environment: *hyper-env
+  init: true
+
+services:
+  cli:
+    <<: *runtime-service
+    profiles: ["tools"]
+    command: ["--help"]
+
+  ws-console:
+    <<: *runtime-service
+    profiles: ["console"]
+    entrypoint: ["python", "examples/orderbook_trades_console.py"]
+    command: ["--coin", "BTC", "--depth", "12", "--trade-limit", "30"]
+    stdin_open: true
+    tty: true
+
+  grpc-console:
+    <<: *runtime-service
+    profiles: ["console"]
+    entrypoint: ["python", "examples/grpc_l2book_trades_console.py"]
+    command: ["--coin", "BTC", "--history-limit", "30"]
+    stdin_open: true
+    tty: true
+
+  benchmark:
+    <<: *runtime-service
+    profiles: ["bench"]
+    entrypoint: ["python", "examples/feed_latency_examples.py", "--out-json", "/output/hypercore_feed_compare.json"]
+    command: ["--coin", "BTC", "--runs", "5"]
+    volumes:
+      - ./artifacts:/output
+
+  validate:
+    build:
+      context: .
+      target: dev
+    image: hypercore-sdk:dev
+    profiles: ["validate"]
+    working_dir: /app
+    environment: *hyper-env
+    init: true
+    command: ["sh", "-lc", "pytest -q && mypy -p hypercore_sdk && python -m build && python -m twine check dist/*"]
+
+  package:
+    build:
+      context: .
+      target: dev
+    image: hypercore-sdk:dev
+    profiles: ["package"]
+    working_dir: /app
+    environment: *hyper-env
+    init: true
+    command: ["sh", "-lc", "python -m build --outdir /dist && python -m twine check /dist/*"]
+    volumes:
+      - ./dist:/dist

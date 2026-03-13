@@ -1,4 +1,4 @@
-# HyperCore SDK API Interface Reference
+# Aleatoric Hypercore Python SDK API Interface Reference
 
 This document is the interface contract for the Python SDK in this repository.
 
@@ -9,12 +9,11 @@ Scope:
 - Status API client and stdio MCP server
 - Derived intelligence layer for indexing and analytics
 
-As-of validation (March 7, 2026):
 As-of validation (March 13, 2026):
-- `pytest`: **127 passed**
-- `pytest` with coverage gate: **92.45% total coverage**
+- `pytest`: **128 passed**
+- `pytest` with coverage gate: **93.22% total coverage**
 - `mypy -p hypercore_sdk`: **no issues found** (16 source files)
-- `python -m build`: **passed**
+- `python -m build --no-isolation`: **passed**
 - `python -m twine check dist/*`: **passed**
 
 ## 1. Quality, Guarantees, and Limits
@@ -22,6 +21,7 @@ As-of validation (March 13, 2026):
 Objective quality facts:
 - The package is typed (`py.typed`) and mypy-clean under project settings.
 - CLI command paths are unit tested with mocked dependencies.
+- MCP tools are contract-tested across the full published tool matrix.
 - Core adapters validate response shapes and raise `RuntimeError` on incompatible payloads.
 - Coverage is above enforced gate (90%).
 
@@ -214,6 +214,10 @@ Current MCP tools:
 - `status_get_public`
 - `status_get_private`
 - `rpc_call`
+
+Operational contract notes:
+- The MCP tool names above are the supported outward-facing interface for editor and agent integrations.
+- Python MCP argument names use snake_case, matching the Python CLI and Python method naming.
 
 ## 5. WebSocket Interface
 

@@ -3,11 +3,27 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hypercore-sdk"
+name = "aleatoric-hypercore-sdk"
 version = "0.3.0"
 description = "Aleatoric Systems Hypercore Python SDK for Hyperliquid market data, dedicated streams, and gRPC."
 readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.10"
+authors = [
+  { name = "Aleatoric Systems", email = "github@aleatoric.systems" }
+]
+keywords = ["aleatoric", "hypercore", "hyperliquid", "sdk", "python", "grpc", "websocket", "mcp"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Internet",
+  "Topic :: Software Development :: Libraries :: Python Modules"
+]
 dependencies = [
   "grpcio>=1.66.0,<1.72.0",
   "grpcio-health-checking>=1.66.0,<1.72.0",
@@ -31,6 +47,13 @@ dev = [
 [project.scripts]
 hypercore-sdk = "hypercore_sdk.cli:main"
 hypercore-sdk-mcp = "hypercore_sdk.mcp_cli:main"
+
+[project.urls]
+Homepage = "https://aleatoric.systems"
+Documentation = "https://github.com/aleatoric/hypercore-python-sdk#readme"
+Repository = "https://github.com/aleatoric/hypercore-python-sdk"
+Issues = "https://github.com/aleatoric/hypercore-python-sdk/issues"
+Support = "https://aleatoric.systems/contact"
 
 [tool.setuptools]
 packages = ["hypercore_sdk", "hypercore_sdk.proto"]
