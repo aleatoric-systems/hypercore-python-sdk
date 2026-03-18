@@ -12,11 +12,11 @@
 ![MCP Badge](https://img.shields.io/badge/JSON--RPC-2.0-444444)
 ![Smithery Badge](https://img.shields.io/badge/Smithery-ready-f97316)
 ![Status](https://img.shields.io/badge/status-production-0a7f5a)
-![Compliance](https://img.shields.io/badge/compliance-Aleatoric%20Engine%20API%20v0.4.7-0a7f5a)
+![Compliance](https://img.shields.io/badge/compliance-Aleatoric%20Engine%20API%20v0.5.10-0a7f5a)
 
 Official MCP client SDK for Aleatoric Systems: institutional-grade synthetic market data generation, unified stream access, and operator-ready service tooling.
 
-Verified Compliance: This client is aligned with Aleatoric Engine API `v0.4.7` and MCP Protocol Version `2024-11-05` over JSON-RPC 2.0. The documented examples are validated against the current production endpoint contract.
+Verified Compliance: This client is aligned with Aleatoric Engine API `v0.5.10` and MCP Protocol Version `2024-11-05` over JSON-RPC 2.0. The documented examples are validated against the current production endpoint contract.
 
 Keywords: `mcp`, `market-data`, `synthetic-data`, `backtesting`, `trading`, `fintech`, `quantitative-finance`, `perpetuals`, `futures`, `order-book`
 

@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.1] - 2026-03-17
+
+### Changed
+
+- Engine compliance target updated from v0.4.7 to v0.5.10 (production hardening: 20/25 gaps fixed, regime-switching funding, TWAP settlement, jump components)
+- MCP server version aligned to SDK version (0.3.1)
+
+---
+
 ## [0.3.0] - 2026-03-13
 
 ### Added

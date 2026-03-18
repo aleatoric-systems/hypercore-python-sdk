@@ -309,7 +309,7 @@ class HypercoreMCPServer:
         if method == "initialize":
             result = {
                 "protocolVersion": DEFAULT_PROTOCOL_VERSION,
-                "serverInfo": {"name": "hypercore-python-mcp", "version": "0.1.0"},
+                "serverInfo": {"name": "hypercore-python-mcp", "version": "0.3.1"},
                 "capabilities": {"tools": {}},
             }
             return _jsonrpc_result(req_id, result)

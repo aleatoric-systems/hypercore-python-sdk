@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aleatoric-hypercore-sdk"
-version = "0.3.0"
+version = "0.3.1"
 description = "Aleatoric Systems Hypercore Python SDK for Hyperliquid market data, dedicated streams, and gRPC."
 readme = "README.md"
 license = "Apache-2.0"

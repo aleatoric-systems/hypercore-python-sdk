@@ -4,7 +4,7 @@
 
 - Publisher: Aleatoric Systems
 - Surface: public customer SDK and MCP client
-- Compliance target: Aleatoric Engine API `v0.4.7`
+- Compliance target: Aleatoric Engine API `v0.5.10`
 - MCP protocol target: `2024-11-05`
 - Transport envelope: JSON-RPC 2.0
 
